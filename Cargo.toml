@@ -1,0 +1,18 @@
+[workspace]
+members = [
+	"tuplez-macros",
+]
+resolver = "2"
+
+[package]
+name = "tuplez"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+any_array = []
+
+[dependencies]
+tuplez-macros = { path = "tuplez-macros", version = "0.1.0" }
+paste = "1.0"
