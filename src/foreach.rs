@@ -1,4 +1,4 @@
-use crate::TupleLike;
+use crate::{Tuple, TupleLike, Unit};
 
 /// Define functors for traversing the tuple by immutable references to tuple's elements.
 ///
@@ -337,4 +337,58 @@ pub trait ForeachOnce<F>: TupleLike {
     /// );
     /// ```
     fn foreach_once(self, f: &mut F) -> Self::Output;
+}
+
+impl<F> Foreach<F> for Unit {
+    type Output = Unit;
+    fn foreach(&self, _: &mut F) -> Self::Output {
+        Unit
+    }
+}
+
+impl<F, First, Other> Foreach<F> for Tuple<First, Other>
+where
+    F: Mapper<First>,
+    Other: Foreach<F>,
+{
+    type Output = Tuple<<F as Mapper<First>>::Output, <Other as Foreach<F>>::Output>;
+    fn foreach(&self, f: &mut F) -> Self::Output {
+        Tuple(f.map(&self.0), self.1.foreach(f))
+    }
+}
+
+impl<F> ForeachMut<F> for Unit {
+    type Output = Unit;
+    fn foreach_mut(&mut self, _: &mut F) -> Self::Output {
+        Unit
+    }
+}
+
+impl<F, First, Other> ForeachMut<F> for Tuple<First, Other>
+where
+    F: MapperMut<First>,
+    Other: ForeachMut<F>,
+{
+    type Output = Tuple<<F as MapperMut<First>>::Output, <Other as ForeachMut<F>>::Output>;
+    fn foreach_mut(&mut self, f: &mut F) -> Self::Output {
+        Tuple(f.map_mut(&mut self.0), self.1.foreach_mut(f))
+    }
+}
+
+impl<F> ForeachOnce<F> for Unit {
+    type Output = Unit;
+    fn foreach_once(self, _: &mut F) -> Self::Output {
+        Unit
+    }
+}
+
+impl<F, First, Other> ForeachOnce<F> for Tuple<First, Other>
+where
+    F: MapperOnce<First>,
+    Other: ForeachOnce<F>,
+{
+    type Output = Tuple<<F as MapperOnce<First>>::Output, <Other as ForeachOnce<F>>::Output>;
+    fn foreach_once(self, f: &mut F) -> Self::Output {
+        Tuple(f.map_once(self.0), self.1.foreach_once(f))
+    }
 }

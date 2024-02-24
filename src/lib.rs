@@ -101,7 +101,7 @@
 
 #[macro_use]
 mod macros;
-mod mapper;
+mod foreach;
 mod tuple;
 
 #[cfg(feature = "any_array")]
@@ -110,7 +110,7 @@ mod any_array;
 #[cfg(feature = "unwrap")]
 mod unwrap;
 
-pub use mapper::*;
+pub use foreach::*;
 pub use tuple::*;
 
 #[cfg(feature = "any_array")]
