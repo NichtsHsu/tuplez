@@ -51,9 +51,9 @@ macro_rules! __to_array {
     };
 }
 
+#[cfg(not(feature = "any_array"))]
 macro_rules! __tuple_array_impl {
     ($cnt:literal;) => {
-        #[cfg(not(feature = "any_array"))]
         impl<T> ToArray<T> for Unit {
             type Array = [T; 0];
             fn to_array(self) -> Self::Array {
@@ -61,7 +61,6 @@ macro_rules! __tuple_array_impl {
             }
         }
 
-        #[cfg(not(feature = "any_array"))]
         impl<T> From<[T; 0]> for Unit {
             fn from(_: [T; 0]) -> Self {
                 Unit
@@ -69,7 +68,6 @@ macro_rules! __tuple_array_impl {
         }
     };
     ($cnt:literal; $($ts:ident)+) => {
-        #[cfg(not(feature = "any_array"))]
         impl<T> ToArray<T> for tuple_t!(T; $cnt) {
             type Array = [T; $cnt];
             fn to_array(self) -> Self::Array {
@@ -77,7 +75,6 @@ macro_rules! __tuple_array_impl {
             }
         }
 
-        #[cfg(not(feature = "any_array"))]
         impl<T> From<[T; $cnt]> for tuple_t!(T; $cnt) {
             fn from(arr: [T; $cnt]) -> Self {
                 __from_array!(arr; $($ts)*)
@@ -102,6 +99,7 @@ macro_rules! __tuple_traits_impl {
             }
         }
 
+        #[cfg(not(feature = "any_array"))]
         __tuple_array_impl!{ $cnt; $($ts)* }
     };
 }

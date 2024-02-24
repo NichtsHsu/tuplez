@@ -104,11 +104,17 @@ mod macros;
 mod mapper;
 mod tuple;
 
+#[cfg(feature = "any_array")]
+mod any_array;
+
 #[cfg(feature = "unwrap")]
 mod unwrap;
 
 pub use mapper::*;
 pub use tuple::*;
+
+#[cfg(feature = "any_array")]
+pub use any_array::*;
 
 #[cfg(feature = "unwrap")]
 pub use unwrap::*;
@@ -175,50 +181,49 @@ pub use tuplez_macros::tuple;
 /// ```
 pub use tuplez_macros::tuple_t;
 
-
 /// Generate patterns for tuples.
-/// 
+///
 /// # Syntax
-/// 
+///
 /// `tuple_pat!([#] [Pat0 [; Count], Pat1 [; Count], ... ])`
-/// 
+///
 /// *The `[` and `]` markers only indicate optional content but not that the `[` and `]` need to be input.*
 ///
 /// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
-/// 
+///
 /// # Examples
 ///
 /// When the number of patterns you provide is less than the number of elements of the tuple,
 /// the following elements will not be matched. For example:
-/// 
+///
 /// ```
 /// use tuplez::*;
-/// 
+///
 /// let tup = tuple!(3.14, "hello", 1, [9.8]);
 /// let tuple_pat!(a, b, c) = tup;
 /// assert_eq!(a, 3.14);
 /// assert_eq!(b, "hello");
 /// assert_eq!(c, 1);
 /// ```
-/// 
+///
 /// If you want the last pattern to match all remaining elements, you can add a `#` mark:
-/// 
+///
 /// ```
 /// use tuplez::*;
-/// 
+///
 /// let tup = tuple!(3.14, "hello", 1, [9.8]);
 /// let tuple_pat!(# a, b, c) = tup;
 /// assert_eq!(a, 3.14);
 /// assert_eq!(b, "hello");
 /// assert_eq!(c, tuple!(1, [9.8]));
 /// ```
-/// 
+///
 /// But this has a bad side effect, even though the number of patterns is equal to the number of elements of the tuple,
 /// the last pattern still matches a tuple containing only one element:
-/// 
+///
 /// ```
 /// use tuplez::*;
-/// 
+///
 /// let tup = tuple!(3.14, "hello", 1, [9.8]);
 /// let tuple_pat!(# a, b, c, d) = tup;
 /// assert_eq!(a, 3.14);
@@ -226,12 +231,12 @@ pub use tuplez_macros::tuple_t;
 /// assert_eq!(c, 1);
 /// assert_eq!(d, tuple!([9.8]));   // Not `[9.8]`
 /// ```
-/// 
+///
 /// In this case, just remove the `#` mark. Or, you can also add an extra `_` pattern to unpack the last tuple:
-/// 
+///
 /// ```
 /// use tuplez::*;
-/// 
+///
 /// let tup = tuple!(3.14, "hello", 1, [9.8]);
 /// let tuple_pat!(# a, b, c, d, _) = tup;
 /// assert_eq!(a, 3.14);
