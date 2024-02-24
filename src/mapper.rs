@@ -196,33 +196,33 @@ pub trait MapperMut<T> {
 ///
 /// ```
 /// use tuplez::*;
-/// 
+///
 /// #[derive(Debug, Default)]
 /// struct MyWrapper<T>(T);
-/// 
+///
 /// struct Unwrapper;
-/// 
+///
 /// impl<T: Default> MapperOnce<Option<T>> for Unwrapper {
 ///     type Output = T;
 ///     fn map_once(&mut self, value: Option<T>) -> Self::Output {
 ///         value.unwrap_or_default()
 ///     }
 /// }
-/// 
+///
 /// impl<T: Default, E> MapperOnce<Result<T, E>> for Unwrapper {
 ///     type Output = T;
 ///     fn map_once(&mut self, value: Result<T, E>) -> Self::Output {
 ///         value.unwrap_or_default()
 ///     }
 /// }
-/// 
+///
 /// impl<T: Default> MapperOnce<MyWrapper<T>> for Unwrapper {
 ///     type Output = T;
 ///     fn map_once(&mut self, value: MyWrapper<T>) -> Self::Output {
 ///         value.0
 ///     }
 /// }
-/// 
+///
 /// let tup = tuple!(
 ///     Some([3.14, 9.8]),
 ///     Result::<i32, ()>::Err(()),

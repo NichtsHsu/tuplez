@@ -46,20 +46,22 @@
 //!
 //! * `any_array`: Use Rust's unstable feature to implement conversion from/to primitive arrays on tuples with any number of elements.
 //! This feature requires compiling with rustc released to nightly channel.
+//! * `unwrap` (by default): Allows converting a tuple whose elements are all wrappers into a tuple of the values those wrappers contain.
+//! See [`Unwrap`] and [`UnwrapOrDefault`].
 //!
 //! # Examples
 //!
 //! ```
 //! // Enable Rust's `generic_const_exprs` feature if you enable tuplez's `any_array` feature.
 //! #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
-//! 
+//!
 //! use tuplez::*;
-//! 
+//!
 //! let tup = tuple!(1, "hello".to_string(), 3.14);
 //! let tup2 = Tuple::from((2, " world", -3.14));
 //! let tup3 = tup + tup2;
 //! assert_eq!(tup3, tuple!(3, "hello world".to_string(), 0.0));
-//! 
+//!
 //! let tup4 = tup3.push(Some([1, 2, 3]));
 //! let (tup5, popped) = tup4.pop_front();
 //! assert_eq!(
@@ -67,7 +69,7 @@
 //!     tuple!("hello world".to_string(), 0.0, Some([1, 2, 3]))
 //! );
 //! assert_eq!(popped, 3);
-//! 
+//!
 //! let tup6 = tup5.rev();
 //! assert_eq!(
 //!     tup6,
@@ -78,7 +80,7 @@
 //!     tup7,
 //!     tuple!(0.0, "hello world".to_string(), Some([1, 2, 3]))
 //! );
-//! 
+//!
 //! let tup8 = tup7.foreach_once(mapper_once! {
 //!     x : f64 => String : x.to_string();
 //!     x : Option<[i32; 3]> => String: format!("{:?}", x.unwrap());
@@ -94,7 +96,7 @@
 //!     ]
 //! );
 //! ```
-//! 
+//!
 //! Please check [`Tuple`]'s documentation page for detailed usage.
 
 #[macro_use]
@@ -102,8 +104,14 @@ mod macros;
 mod mapper;
 mod tuple;
 
+#[cfg(feature = "unwrap")]
+mod unwrap;
+
 pub use mapper::*;
 pub use tuple::*;
+
+#[cfg(feature = "unwrap")]
+pub use unwrap::*;
 
 /// Generate a tuple from a list of expressions.
 ///

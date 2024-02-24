@@ -27,8 +27,9 @@ keywords.workspace = true
 categories = [ "data-structures" ]
 
 [features]
-default = []
+default = [ "unwrap" ]
 any_array = []
+unwrap = []
 
 [dependencies]
 tuplez-macros = { path = "tuplez-macros", version = "0.1.1" }
