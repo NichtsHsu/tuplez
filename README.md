@@ -36,4 +36,4 @@ the primitive tuples.
 * Traverse all elements of a tuple.
 * When the number of elements of a tuple doesn't exceed 32, then it can be converted from/to a primitive tuple or a primitive array.
 
-Please check the [documentation](https://docs.rs/tuple) for details.
+Please check the [documentation](https://docs.rs/tuplez) for details.

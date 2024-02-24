@@ -1,7 +1,15 @@
 [package]
 name = "tuplez-macros"
-version = "0.1.0"
-edition = "2021"
+version = "0.1.1"
+description = "Procedural macros implementation of tuplez"
+authors.workspace = true
+license.workspace = true
+readme.workspace = true
+edition.workspace = true
+documentation.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories = [ "data-structures", "development-tools::procedural-macro-helpers" ]
 
 [lib]
 proc-macro = true

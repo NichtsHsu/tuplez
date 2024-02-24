@@ -4,15 +4,32 @@ members = [
 ]
 resolver = "2"
 
+[workspace.package]
+authors = [ "Nichts Hsu <NichtsVonChaos@gmail.com>" ]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+edition = "2021"
+documentation = "https://docs.rs/tuplez"
+repository = "https://github.com/NichtsHsu/tuplez"
+keywords = [ "tuple" ]
+
 [package]
 name = "tuplez"
-version = "0.1.0"
-edition = "2021"
+version = "0.1.1"
+description = "Tuples represented in recursive form"
+authors.workspace = true
+license.workspace = true
+readme.workspace = true
+edition.workspace = true
+documentation.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories = [ "data-structures" ]
 
 [features]
 default = []
 any_array = []
 
 [dependencies]
-tuplez-macros = { path = "tuplez-macros", version = "0.1.0" }
+tuplez-macros = { path = "tuplez-macros", version = "0.1.1" }
 paste = "1.0"
