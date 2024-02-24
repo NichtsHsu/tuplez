@@ -29,6 +29,27 @@ pub fn tuple_t(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
+pub fn tuple_pat(input: TokenStream) -> TokenStream {
+    let TuplePat { mut pats, leader } = parse_macro_input!(input as TuplePat);
+    let mut unpack;
+    if pats.is_empty() {
+        unpack = quote!(_);
+    } else if leader {
+        unpack = quote!(..);
+        for pat in pats.into_iter().rev() {
+            unpack = quote!( Tuple( #pat, #unpack) );
+        }
+    } else {
+        let last = pats.pop().unwrap();
+        unpack = quote!(#last);
+        for pat in pats.into_iter().rev() {
+            unpack = quote!( Tuple( #pat, #unpack) );
+        }
+    }
+    unpack.into()
+}
+
+#[proc_macro]
 pub fn get(input: TokenStream) -> TokenStream {
     let TupleIndex { tup, index } = parse_macro_input!(input as TupleIndex);
     let field = quote!(. 1);

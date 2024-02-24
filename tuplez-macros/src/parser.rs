@@ -1,4 +1,4 @@
-use syn::{parse::Parse, Expr, LitInt, Token, Type};
+use syn::{parse::Parse, Expr, LitInt, Pat, Token, Type};
 
 pub struct TupleGen(pub Vec<Expr>);
 
@@ -67,6 +67,53 @@ impl Parse for TupleType {
                 }
                 if input.is_empty() {
                     return Ok(TupleType(types));
+                }
+                let _: Token![,] = input.parse()?;
+            } else {
+                return Err(lookahead.error());
+            }
+        }
+    }
+}
+
+pub struct TuplePat {
+    pub pats: Vec<Pat>,
+    pub leader: bool,
+}
+
+impl Parse for TuplePat {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut pats = vec![];
+        let leader = if input.peek(Token![#]) {
+            let _: Token![#] = input.parse()?;
+            false
+        } else {
+            true
+        };
+        loop {
+            if input.is_empty() {
+                return Ok(TuplePat { pats, leader });
+            }
+            let pat = Pat::parse_multi(input)?;
+            if input.is_empty() {
+                pats.push(pat);
+                return Ok(TuplePat { pats, leader });
+            }
+            let lookahead = input.lookahead1();
+            if lookahead.peek(Token![,]) {
+                let _: Token![,] = input.parse()?;
+                pats.push(pat);
+                continue;
+            }
+            if lookahead.peek(Token![;]) {
+                let _: Token![;] = input.parse()?;
+                let num: LitInt = input.parse()?;
+                let num: usize = num.base10_parse()?;
+                for _ in 0..num {
+                    pats.push(pat.clone());
+                }
+                if input.is_empty() {
+                    return Ok(TuplePat { pats, leader });
                 }
                 let _: Token![,] = input.parse()?;
             } else {

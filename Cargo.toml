@@ -15,7 +15,7 @@ keywords = [ "tuple" ]
 
 [package]
 name = "tuplez"
-version = "0.1.1"
+version = "0.1.2"
 description = "Tuples represented in recursive form"
 authors.workspace = true
 license.workspace = true
@@ -32,5 +32,5 @@ any_array = []
 unwrap = []
 
 [dependencies]
-tuplez-macros = { path = "tuplez-macros", version = "0.1.1" }
+tuplez-macros = { path = "tuplez-macros", version = "0.1.2" }
 paste = "1.0"
