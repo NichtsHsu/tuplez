@@ -39,7 +39,7 @@ dependencies = [
 
 [[package]]
 name = "tuplez"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "paste",
  "tuplez-macros",
