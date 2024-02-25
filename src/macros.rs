@@ -109,12 +109,10 @@ macro_rules! __tuple_traits_impl {
 /// # Syntax
 ///
 /// ```text
-/// Introduce   = Variable [, Lifetime1, Lifetime2, ... ]
-/// TypeMap     = TypeIn [=> TypeOut]
-/// Specialized = Introduce : TypeMap : Expr
-/// Universal   = _ : TypeMap : Function [where Bounds]
+/// Generic = [Lifetime1, Lifetime2, ...] [Type1 [: Bound1], Type2 [: Bound2], ...]
+/// Rule    = [ < Generic > ] | Variable : InputType | [-> OutputType] { Body }
 ///
-/// mapper!([ Specialized1; Specialized2; ... ] [; Univsersal])
+/// mapper!( [Rule1 Rule2 ... ] )
 /// ```
 ///
 /// *The `[` and `]` markers only indicate optional content but not that the `[` and `]` need to be input.*
@@ -123,433 +121,110 @@ macro_rules! __tuple_traits_impl {
 ///
 /// # Explanation
 ///
-/// ## Specialized mapping rules
-///
-/// Firstly introduce a variable name used to represent the element (Recommand using `x`) and all possible lifetime paramters.
-/// If the element type contains a reference or generic lifetime parameter, please explicitly annotate all lifetimes:
+/// A mapping rule is much like a closure, except that it must specify the argument type and the return type:
 ///
 /// ```text
-/// x, 'a
+/// |x: i32| -> i64 { x as i64 }
 /// ```
 ///
-/// Then specify the mapping of the type, that is, element type => output type.
-/// If the element type and output type are the same type, the output type can be omitted:
+/// Also supports adding `mut`:
 ///
 /// ```text
-/// &'a str => &'a [u8]
+/// |mut x: i32| -> i64 { x += 1; x as i64 }
 /// ```
 ///
-/// Next, write down the conversion expression, remember that `x` is an immutable reference to the element:
+/// If the return value requires a lifetime, you need to explicitly introduce the lifetime annotation, since Rust binds the lifetime
+/// of return value to the functor instead of the element by default:
 ///
 /// ```text
-/// x.as_bytes()
+/// <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
 /// ```
 ///
-/// Finally, use `:` to link them, and a specialized mapping rule is complete:
+/// You can omit the return type when the return type is the same as the element type.
+/// Note: Do not misunderstand that the return type is automatically deduced or is a `()`.
 ///
 /// ```text
-/// x, 'a : &'a str => &'a [u8] : x.as_bytes()
+/// |x: i32| { x + 1 }
+/// ```
+///
+/// You can also introduce generic types like this:
+///
+/// ```text
+/// <T> |x: Option<T>| -> T { x.unwrap() }
+/// ```
+///
+/// Many times, you may also need to add bounds to the generic type:
+///
+/// ```text
+/// <T: ToString> |x: Option<T>| -> String { x.unwrap().to_string() }
 /// ```
 ///
 /// Construct specialized mapping rules for all element types in the tuple,
-/// and then combine them in a [`mapper!`](crate::mapper!) macro to traverse the tuple:
+/// and then combine them in the [`mapper!`](crate::mapper!) macro to traverse the tuple:
 ///
 /// ```
 /// use tuplez::*;
 ///
-/// let tup = tuple!(1, "hello", 3.14).foreach(mapper!{
-///    x: i32 : *x + 1;                                 // Omit the output type
-///    x: f32 => String: x.to_string();
-///    x, 'a: &'a str => &'a [u8]: x.as_bytes()
+/// let tup = tuple!(1, "hello", Some(3.14)).foreach(mapper! {
+///     |mut x: i32| -> i64 { x += 1; x as i64 }
+///     <T: ToString> |x: Option<T>| -> String { x.unwrap().to_string() }
+///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
 /// });
-/// assert_eq!(tup, tuple!(2, b"hello" as &[u8], "3.14".to_string()));
+/// assert_eq!(tup, tuple!(2i64, b"hello" as &[u8], "3.14".to_string()));
 /// ```
 ///
-/// ## Universal mapping rule
-///
-/// Universal mapping rule currently only supports conversion through generic functions, not expressions.
-/// So first define the mapping function:
-///
-/// ```
-/// fn to_string<T: ToString>(v: &T) -> String {
-///     v.to_string()
-/// }
-/// ```
-///
-/// Write down the mapping of types as before, only this time we use an `_` for element types.
-///
-/// ```text
-/// _ => String
-/// ```
-///
-/// Finally, use `:` to link them. But there is a little noise here. We need to write down the bounds of the mapping
-/// function as well:
-///
-/// ```text
-/// _ => String : to_string where ToString
-/// ```
-///
-/// Put it in the [`mapper!`](crate::mapper!) macro to traverse the tuple:
+/// Tip: If you don't want to consume the tuple, call its [`as_ref()`](crate::TupleLike::as_ref()) before traversing.
+/// Likewise, if you want to modify elements of tuple, call its [`as_mut()`](crate::TupleLike::as_mut()) before traversing.
 ///
 /// ```
 /// use tuplez::*;
 ///
-/// fn to_string<T: ToString>(v: &T) -> String {
-///     v.to_string()
-/// }
-///
-/// let tup = tuple!(1, "hello", 3.14);
-/// let tup2 = tup.foreach(mapper! {
-///     _ => String: to_string where ToString
+/// let mut tup = tuple!(1, "hello", Some(3.14));
+/// let tup2 = tup.as_ref().foreach(mapper!{
+///     |x: &i32| -> i32 { *x + 1 }
+///     <T: ToString> |x: &Option<T>| -> String { x.as_ref().unwrap().to_string() }
+///     <'a> |x: &&'a str| -> &'a [u8] { x.as_bytes() }
 /// });
-/// assert_eq!(
-///     tup2,
-///     tuple!("1".to_string(), "hello".to_string(), "3.14".to_string())
-/// );
-/// ```
+/// assert_eq!(tup2, tuple!(2, b"hello" as &[u8], "3.14".to_string()));
+/// assert_eq!(tup, tuple!(1, "hello", Some(3.14)));  // And the original tuple is not consumed
 ///
-/// If the mapping function output the same type, the output type can be omitted:
-///
-/// ```
-/// use tuplez::*;
-///
-/// fn just<T: Copy>(v: &T) -> T { *v }
-///
-/// let tup = tuple!(1, "hello", 3.14);
-/// let tup2 = tup.foreach(mapper! {
-///     _ : just where Copy
+/// _ = tup.as_mut().foreach(mapper!{
+///     |x: &mut i32| -> () { *x += 1; }
+///     <T: ToString> |x: &mut Option<T>| -> () { x.take(); }
+///     |x: &mut &str| -> () { *x = "world" }
 /// });
-/// assert_eq!(tup, tup2);
+/// assert_eq!(tup, tuple!(2, "world", None));
 /// ```
 ///
-/// ## Use both
 ///
-/// You can use both multiple specialized mapping rules and one universal mapping rule in a [`mapper!`](crate::mapper!) macro,
-/// but there are some restrictions.
-///
-/// 1. The universal mapping rule must be placed after all specialized mapping rules.
-/// 2. Types that use specialized mapping rules must be exclusive from the bounds of the universal mapping rule.
-/// 3. Either all types that use specialized mapping rules is your custom types, or the bounds of the universal mapping rule contain
-/// your custom traits.
-///
-/// Example of custom type:
-///
-/// ```
-/// use tuplez::*;
-///
-/// struct MyElement(i32);
-///
-/// fn to_string<T: ToString>(v: &T) -> String {
-///     v.to_string()
-/// }
-///
-/// let tup = tuple!(MyElement(12), "hello", 3.14);
-/// let tup2 = tup.foreach(mapper! {
-///     x : MyElement => i32 : x.0;
-///     _ => String: to_string where ToString
-/// });
-/// assert_eq!(tup2, tuple!(12, "hello".to_string(), "3.14".to_string()));
-/// ```
-///
-/// Example of custom trait:
-///
-/// ```
-/// use tuplez::*;
-///
-/// trait MyToString: ToString {}
-/// impl MyToString for &str {}
-/// impl MyToString for f32 {}
-///
-/// fn to_string<T: MyToString>(v: &T) -> String {
-///     v.to_string()
-/// }
-///
-/// let tup = tuple!(vec![12, 14], "hello", 3.14);
-/// /* Using `ToString` here is not allowed because
-///  * neither `Vec` nor `ToString` is defined in current crate,
-///  * even though `Vec` does not implement `ToString`.
-///  */
-/// let tup2 = tup.foreach(mapper! {
-///     x : Vec<i32> => i32 : x[0];
-///     _ => String: to_string where MyToString
-/// });
-/// assert_eq!(tup2, tuple!(12, "hello".to_string(), "3.14".to_string()));
-/// ```
+
 #[macro_export]
 macro_rules! mapper {
-    ($($x:ident $(, $lt:lifetime)*: $it:ty $(=> $ot:ty)? : $e:expr);* $(;)?) => {{
+    ($(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)? | $($x:ident)* $(: $it:ty)? | $(-> $ot:ty)? $body:block $($tail:tt)*) => {{
         struct __Mapper;
-        $(
-            mapper!(@impl $x $(, $lt)* : $it $(=> $ot)? : $e);
-        )*
+        mapper!{@impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? | $($x)* $(: $it)? | $(-> $ot)? $body $($tail)* }
         &mut __Mapper
     }};
-    ($($x:ident $(, $lt:lifetime)*: $it:ty $(=> $ot:ty)? : $e:expr ;)*
-        $(_ $(=> $ot2:ty)? : $f:ident $(where $($t:tt)*)?)?) => {{
-        struct __Mapper;
-        $(
-            mapper!(@impl $x $(, $lt)* : $it $(=> $ot)? : $e);
-        )*
-        $(
-            mapper!(@impl _ $(=> $ot2)? : $f $(where $($t)*)?);
-        )?
-        &mut __Mapper
-    }};
-    (@impl _ : $f:ident $(where $($t:tt)*)?) => {{
-        impl<T $(: $($t)*)?> Mapper<T> for __Mapper
+    (@impl) => {};
+    (@impl $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)? | $($x:ident)* : $it:ty | $body:block $($tail:tt)*) => {
+        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? Mapper<$it> for __Mapper
         {
-            type Output = T;
-            fn map(&mut self, value: &T) -> Self::Output {
-                $f(value)
-            }
-        }
-    }};
-    (@impl _ => $ot:ty : $f:ident $(where $($t:tt)*)?) => {{
-        impl<T$(: $($t)*)?> Mapper<T> for __Mapper
-        {
-            type Output = $ot;
-            fn map(&mut self, value: &T) -> Self::Output {
-                $f(value)
-            }
-        }
-    }};
-    (@impl $x:ident : $it:ty : $e:expr) => {
-        impl Mapper<$it> for __Mapper {
             type Output = $it;
-            fn map(&mut self, value: &$it) -> Self::Output {
-                let f = |$x : &$it| -> $it { $e };
+            fn map(&mut self, value: $it) -> Self::Output {
+                let f = | $($x)* : $it| -> $it { $body };
                 f(value)
             }
         }
+        mapper!{@impl $($tail)* }
     };
-    (@impl $x:ident $(, $lt:lifetime)* : $it:ty : $e:expr) => {
-        impl<$($lt),*> Mapper<$it> for __Mapper {
-            type Output = $it;
-            fn map(&mut self, value: &$it) -> Self::Output {
-                let f = |$x : &$it| -> $it { $e };
-                f(value)
-            }
-        }
-    };
-    (@impl $x:ident : $it:ty => $ot:ty : $e:expr) => {
-        impl Mapper<$it> for __Mapper {
+    (@impl $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)? | $($x:ident)* : $it:ty | -> $ot:ty $body:block $($tail:tt)*) => {
+        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? Mapper<$it> for __Mapper {
             type Output = $ot;
-            fn map(&mut self, value: &$it) -> Self::Output {
-                let f = |$x : &$it| -> $ot { $e };
+            fn map(&mut self, value: $it) -> Self::Output {
+                let f = | $($x)* : $it| -> $ot { $body };
                 f(value)
             }
         }
-    };
-    (@impl $x:ident $(, $lt:lifetime)* : $it:ty => $ot:ty : $e:expr) => {
-        impl<$($lt),*> Mapper<$it> for __Mapper {
-            type Output = $ot;
-            fn map(&mut self, value: &$it) -> Self::Output {
-                let f = |$x : &$it| -> $ot { $e };
-                f(value)
-            }
-        }
-    };
-}
-
-/// Provides a simple way to create a functor that implements [`MapperMut`](crate::MapperMut).
-///
-/// # Syntax
-///
-/// The syntax is exactly the same as [`mapper!`](crate::mapper!). The difference is that [`mapper_mut!`](crate::mapper_mut!) passes in mutable references
-/// to the elements of the tuple instead of immutable references.
-///
-/// # Example
-///
-/// ```
-/// use tuplez::*;
-///
-/// let mut tup = tuple!(2, "hello", 3.14);
-/// let tup2 = tup.foreach_mut(mapper_mut!{
-///     x: i32: { (*x) *= (*x); *x - 1 };
-///     x: f32 => (): *x += 1.0;
-///     x, 'a: &'a str: *x
-/// });
-/// assert_eq!(tup, tuple!(4, "hello", 3.14 + 1.0));
-/// assert_eq!(tup2, tuple!(3, "hello", ()));
-/// ```
-#[macro_export]
-macro_rules! mapper_mut {
-    ($($x:ident $(, $lt:lifetime)*: $it:ty $(=> $ot:ty)? : $e:expr);* $(;)?) => {{
-        struct __MapperMut;
-        $(
-            mapper_mut!(@impl $x $(, $lt)* : $it $(=> $ot)? : $e);
-        )*
-        &mut __MapperMut
-    }};
-    ($($x:ident $(, $lt:lifetime)*: $it:ty $(=> $ot:ty)? : $e:expr ;)*
-        $(_ $(=> $ot2:ty)? : $f:ident $(where $($t:tt)*)?)?) => {{
-        struct __MapperMut;
-        $(
-            mapper_mut!(@impl $x $(, $lt)* : $it $(=> $ot)? : $e);
-        )*
-        $(
-            mapper_mut!(@impl _ $(=> $ot2)? : $f $(where $($t)*)?);
-        )?
-        &mut __MapperMut
-    }};
-    (@impl _ : $f:ident $(where $($t:tt)*)?) => {{
-        impl<T $(: $($t)*)?> MapperMut<T> for __MapperMut
-        {
-            type Output = T;
-            fn map_mut(&mut self, value: &mut T) -> Self::Output {
-                $f(value)
-            }
-        }
-    }};
-    (@impl _ => $ot:ty : $f:ident $(where $($t:tt)*)?) => {{
-        impl<T$(: $($t)*)?> MapperMut<T> for __MapperMut
-        {
-            type Output = $ot;
-            fn map_mut(&mut self, value: &mut T) -> Self::Output {
-                $f(value)
-            }
-        }
-    }};
-    (@impl $x:ident : $it:ty : $e:expr) => {
-        impl MapperMut<$it> for __MapperMut {
-            type Output = $it;
-            fn map_mut(&mut self, value: &mut $it) -> Self::Output {
-                let f = |$x : &mut $it| -> $it { $e };
-                f(value)
-            }
-        }
-    };
-    (@impl $x:ident $(, $lt:lifetime)* : $it:ty : $e:expr) => {
-        impl<$($lt),*> MapperMut<$it> for __MapperMut {
-            type Output = $it;
-            fn map_mut(&mut self, value: &mut $it) -> Self::Output {
-                let f = |$x : &mut $it| -> $it { $e };
-                f(value)
-            }
-        }
-    };
-    (@impl $x:ident : $it:ty => $ot:ty : $e:expr) => {
-        impl MapperMut<$it> for __MapperMut {
-            type Output = $ot;
-            fn map_mut(&mut self, value: &mut $it) -> Self::Output {
-                let f = |$x : &mut $it| -> $ot { $e };
-                f(value)
-            }
-        }
-    };
-    (@impl $x:ident $(, $lt:lifetime)* : $it:ty => $ot:ty : $e:expr) => {
-        impl<$($lt),*> MapperMut<$it> for __MapperMut {
-            type Output = $ot;
-            fn map_mut(&mut self, value: &mut $it) -> Self::Output {
-                let f = |$x : &mut $it| -> $ot { $e };
-                f(value)
-            }
-        }
-    };
-}
-
-/// Provides a simple way to create a functor that implements [`MapperOnce`](crate::MapperOnce).
-///
-/// # Syntax
-///
-/// The syntax is exactly the same as [`mapper!`](crate::mapper!). The difference is that [`mapper_once!`](crate::mapper_once!) take elements of the tuple
-/// instead of pass in their immutable references.
-///
-/// # Example
-///
-/// ```
-/// use tuplez::*;
-///
-/// let tup = tuple!(vec![1, 2, 3], "hello".to_string());
-/// let tup2 = tup.foreach_once(mapper_once!{
-///     x: Vec<i32> => Box<[i32]> : x.into();
-///     x: String : x
-/// });
-/// // assert_eq!(tup, ... ); // No, `tup` has been moved
-/// assert_eq!(
-///     tup2,
-///     tuple!(
-///         Box::<[i32; 3]>::new([1, 2, 3]) as Box<[i32]>,
-///         "hello".to_string()
-///     )
-/// );
-/// ```
-#[macro_export]
-macro_rules! mapper_once {
-    ($($x:ident $(, $lt:lifetime)*: $it:ty $(=> $ot:ty)? : $e:expr);* $(;)?) => {{
-        struct __MapperOnce;
-        $(
-            mapper_once!(@impl $x $(, $lt)* : $it $(=> $ot)? : $e);
-        )*
-        &mut __MapperOnce
-    }};
-    ($($x:ident $(, $lt:lifetime)*: $it:ty $(=> $ot:ty)? : $e:expr ;)*
-        $(_ $(=> $ot2:ty)? : $f:ident $(where $($t:tt)*)?)?) => {{
-        struct __MapperOnce;
-        $(
-            mapper_once!(@impl $x $(, $lt)* : $it $(=> $ot)? : $e);
-        )*
-        $(
-            mapper_once!(@impl _ $(=> $ot2)? : $f $(where $($t)*)?);
-        )?
-        &mut __MapperOnce
-    }};
-    (@impl _ : $f:ident $(where $($t:tt)*)?) => {{
-        impl<T $(: $($t)*)?> MapperOnce<T> for __MapperOnce
-        {
-            type Output = T;
-            fn map_once(&mut self, value: T) -> Self::Output {
-                $f(value)
-            }
-        }
-    }};
-    (@impl _ => $ot:ty : $f:ident $(where $($t:tt)*)?) => {{
-        impl<T$(: $($t)*)?> MapperOnce<T> for __MapperOnce
-        {
-            type Output = $ot;
-            fn map_once(&mut self, value: T) -> Self::Output {
-                $f(value)
-            }
-        }
-    }};
-    (@impl $x:ident : $it:ty : $e:expr) => {
-        impl MapperOnce<$it> for __MapperOnce {
-            type Output = $it;
-            fn map_once(&mut self, value: $it) -> Self::Output {
-                #[allow(unused_mut)]
-                let f = |mut $x : $it| -> $it { $e };
-                f(value)
-            }
-        }
-    };
-    (@impl $x:ident $(, $lt:lifetime)* : $it:ty : $e:expr) => {
-        impl<$($lt),*> MapperOnce<$it> for __MapperOnce {
-            type Output = $it;
-            fn map_once(&mut self, value: $it) -> Self::Output {
-                #[allow(unused_mut)]
-                let f = |mut $x : $it| -> $it { $e };
-                f(value)
-            }
-        }
-    };
-    (@impl $x:ident : $it:ty => $ot:ty : $e:expr) => {
-        impl MapperOnce<$it> for __MapperOnce {
-            type Output = $ot;
-            fn map_once(&mut self, value: $it) -> Self::Output {
-                #[allow(unused_mut)]
-                let f = |mut $x : $it| -> $ot { $e };
-                f(value)
-            }
-        }
-    };
-    (@impl $x:ident $(, $lt:lifetime)* : $it:ty => $ot:ty : $e:expr) => {
-        impl<$($lt),*> MapperOnce<$it> for __MapperOnce {
-            type Output = $ot;
-            fn map_once(&mut self, value: $it) -> Self::Output {
-                #[allow(unused_mut)]
-                let f = |mut $x : $it| -> $ot { $e };
-                f(value)
-            }
-        }
-    };
+        mapper!{@impl $($tail)* }
+    }
 }

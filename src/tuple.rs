@@ -194,6 +194,22 @@ pub struct Unit;
 /// // _ = unit.pop()                   // Error: cannot pop an `Unit`
 /// ```
 ///
+/// The [`take!`](crate::take!) macro can take out an element by its index or type:
+///
+/// ```
+/// use tuplez::*;
+///
+/// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
+///
+/// let (element, remainder) = take!(tup; 2);
+/// assert_eq!(element, 3.14);
+/// assert_eq!(remainder, tuple!(1, "hello", [1, 2, 3]));
+///
+/// let (element, remainder) = take!(tup; &str);
+/// assert_eq!(element, "hello");
+/// assert_eq!(remainder, tuple!(1, 3.14, [1, 2, 3]));
+/// ```
+///
 /// You can use the [`split_at!`](crate::split_at) macro to split a tuple into two parts.
 /// Like the [`get!`](crate::get) macro, the index must be an integer literal:
 ///
@@ -290,45 +306,28 @@ pub struct Unit;
 ///
 /// # Traverse tuples
 ///
-/// You can traverse tuples by [`foreach()`](crate::Foreach::foreach()), [`foreach_mut()`](crate::ForeachMut::foreach_mut())
-/// and [`foreach_once()`](crate::ForeachOnce::foreach_once()).
+/// You can traverse tuples by [`foreach()`](crate::Foreach::foreach()).
 ///
-/// Silimar to [`Fn`] / [`FnMut`] / [`FnOnce`],
-/// [`foreach()`](crate::Foreach::foreach()) will traverse all elements in the form of `&T`,
-/// [`foreach_mut()`](crate::ForeachMut::foreach_mut()) will traverse all elements in the form of `&mut T`,
-/// and [`foreach_once()`](crate::ForeachOnce::foreach_once()) will traverse all elements in the form of `T`,
-/// so [`foreach_once()`](crate::ForeachOnce::foreach_once()) will take the ownership of the tuple.
+/// Call [`foreach()`](crate::Foreach::foreach()) on a tuple requires a functor implementing [`Mapper`](crate::Mapper) as the paramter.
+/// Check its documentation page for examples.
 ///
-/// Call [`foreach()`](crate::Foreach::foreach()) / [`foreach_mut()`](crate::ForeachMut::foreach_mut()) /
-/// [`foreach_once()`](crate::ForeachOnce::foreach_once()) on a tuple requires a functor implementing
-/// [`Mapper`](crate::Mapper) / [`MapperMut`](crate::MapperMut) / [`MapperOnce`](crate::MapperOnce) as the paramter.
-/// Check their documentation pages for examples.
-///
-/// However, here are [`mapper!`] / [`mapper_mut!`] / [`mapper_once!`] macros that can help you
-/// quickly generate a simple functor:
+/// However, here is a [`mapper!`] macro that can help you quickly generate a simple functor:
 ///
 /// ```
 /// use tuplez::*;
 ///
-/// fn to_string<T: ToString>(v: T) -> String {
-///     v.to_string()
-/// }
-///
-/// let tup = tuple!(1, "hello", 3.14);
-/// let tup2 = tup.foreach_once(mapper_once!{
-///     _ => String: to_string where ToString
-/// });     // Currently, the bounds of the function must be written explicitly within the macro
-/// assert_eq!(tup2, tuple!("1".to_string(), "hello".to_string(), "3.14".to_string()));
-///
-/// let tup3 = tup.foreach(mapper!{
-///    x: i32 => i64: *x as i64;
-///    x: f32 => String: x.to_string();
-///    x, 'a: &'a str => &'a [u8]: x.as_bytes()
-/// });     // Reference types need to explicitly introduce its lifetime parameters
-/// assert_eq!(tup3, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
+/// let tup = tuple!(1, "hello", 3.14).foreach(mapper!{
+///     |x: i32| -> i64 { x as i64 }
+///     |x: f32| -> String { x.to_string() }
+///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
+/// });
+/// assert_eq!(tup, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
 /// ```
 ///
-/// Check the documentation pages of these macros for detailed syntax.
+/// Check the documentation pages of [`mapper!`] macro for detailed syntax.
+///
+/// NOTE: Traversing a tuple will consume it. If this is not what you want, call [`as_ref()`](TupleLike::as_ref())
+/// or [`as_mut()`](TupleLike::as_mut()) to create a new tuple that references its all members before traversing.
 ///
 /// # Convert from/to primitive tuples
 ///
