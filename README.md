@@ -33,7 +33,7 @@ the primitive tuples.
 * Join two tuples or split a tuple into two parts.
 * Reverse, left rotate, or right rotate a tuple.
 * If all element types implement a `Trait` (e.g. `Eq`, `Add`), then the `Tuple` also implement that `Trait`.
-* Traverse all elements of a tuple.
+* Traverse all elements of a tuple, or fold a tuple.
 * When the number of elements of a tuple doesn't exceed 32, then it can be converted from/to a primitive tuple or a primitive array.
 
 Please check the [documentation](https://docs.rs/tuplez) for details.

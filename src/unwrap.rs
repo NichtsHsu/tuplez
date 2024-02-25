@@ -1,3 +1,11 @@
+//! Provides the ability to unwrap elements of tuples.
+//!
+//! This module is only available when the `unwrap` feature is enabled (enabled by default).
+//!
+//! Since this module introduces the [`unwrap()`](Unwrap::unwrap()) method that may cause panic,
+//! you may choose to disable it to avoid. Even if you accept it, it is more recommended that you use [`unwrap_or_default()`](UnwrapOrDefault::unwrap_or_default()) or
+//! [`try_unwrap()`](Tuple::try_unwrap()) to avoid panic.
+
 use crate::{Tuple, TupleLike, Unit};
 
 /// Indicate that a type is a wrapper of a value and can be unwrapped into it.
@@ -28,7 +36,7 @@ pub trait Unwrap {
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, unwrap::Unwrap};
     ///
     /// let tup = tuple!(Some(1), Ok::<f32, ()>(3.14), Some("hello"));
     /// assert_eq!(tup.unwrap(), tuple!(1, 3.14, "hello"));
@@ -46,7 +54,7 @@ pub trait Unwrap {
 /// Only available if the `unwrap` feature is enabled (enabled by default).
 ///
 /// Unlike [`Unwrap`], the trait [`UnwrapOrDefault`] indicates that when the wrapper does not contain a value,
-/// then it is able to create a default value instead of panic.
+/// it's able to create a default value instead of panic.
 ///
 /// [`UnwrapOrDefault`] is implemented by default for four types:
 /// * [`Option<T>`](std::option::Option)
@@ -65,7 +73,7 @@ pub trait UnwrapOrDefault {
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, unwrap::UnwrapOrDefault};
     ///
     /// let tup = tuple!(Some(1), Err::<f32, &str>("failed"), Some("hello"));
     /// assert_eq!(tup.unwrap_or_default(), tuple!(1, 0.0, "hello"));
@@ -151,7 +159,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::tuple;
     ///
     /// let tup = tuple!(Some(1), Ok::<f32, ()>(3.14));
     /// assert_eq!(tup.try_unwrap(), Some(tuple!(1, 3.14)));

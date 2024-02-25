@@ -32,13 +32,13 @@
 //! # Functionality
 //!
 //! * [Create tuples](tuple!) with any number of elements.
-//! * [Access elements](get!) in a tuple at any index, or [by their types](Search).
+//! * [Access elements](get!) in a tuple at any index, or by their types.
 //! * [Push element](TupleLike::push()) to a tuple or [pop element](Popable::pop()) from a tuple.
 //! * [Join](TupleLike::join()) two tuples or [split](split_at!) a tuple into two parts.
 //! * [Reverse](TupleLike::rev()), [left rotate](Rotatable::rot_l()), or [right rotate](Rotatable::rot_r()) a tuple.
 //! * If all element types implement a `Trait` (e.g. `Eq`, `Add`), then the [`Tuple`] also implement that `Trait`.
 //! [See which traits are supported and learn how to implement your custom traits for `Tuple`](Tuple#trait-implementations-on-tuple).
-//! * [Traverse all elements](Tuple#traverse-tuples) of a tuple.
+//! * [Traverse all elements](Tuple#traverse-tuples) of a tuple, or [fold](Tuple#fold-tuples) a tuple.
 //! * When the number of elements of a tuple doesn't exceed 32, then it can be converted from/to [a primitive tuple](Tuple#convert-fromto-primitive-tuples)
 //! or [a primitive array](Tuple#convert-fromto-primitive-arrays).
 //!
@@ -47,7 +47,7 @@
 //! * `any_array`: Use Rust's unstable feature to implement conversion from/to primitive arrays on tuples with any number of elements.
 //! This feature requires compiling with rustc released to nightly channel.
 //! * `unwrap` (by default): Allows converting a tuple whose elements are all wrappers into a tuple of the values those wrappers contain.
-//! See [`Unwrap`] and [`UnwrapOrDefault`].
+//! See [`Unwrap`](crate::unwrap::Unwrap) and [`UnwrapOrDefault`](crate::unwrap::UnwrapOrDefault).
 //!
 //! # Examples
 //!
@@ -81,7 +81,7 @@
 //!     tuple!(0.0, "hello world".to_string(), Some([1, 2, 3]))
 //! );
 //!
-//! let tup8 = tup7.map(mapper! {
+//! let tup8 = tup7.foreach(mapper! {
 //!     |x: f64| -> String { x.to_string() }
 //!     |x: Option<[i32; 3]>| -> String { format!("{:?}", x.unwrap()) }
 //!     |x: String| { x }
@@ -95,31 +95,42 @@
 //!         "[1, 2, 3]".to_string()
 //!     ]
 //! );
+//!
+//! let tup9 = tuple!(1, "2", 3.0);
+//! let result = tup9.fold(
+//!     seq_folder!(
+//!         |acc, x| (acc + x) as f64,
+//!         |acc: f64, x: &str| acc.to_string() + x,
+//!         |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
+//!     ),
+//!     0,
+//! );
+//! assert_eq!(result, 15);
 //! ```
 //!
 //! Please check [`Tuple`]'s documentation page for detailed usage.
 
+extern crate self as tuplez;
+
 #[macro_use]
 mod macros;
-mod foreach;
-mod search;
+pub mod fold;
+pub mod foreach;
+pub mod search;
 mod tuple;
 
 #[cfg(feature = "any_array")]
 mod any_array;
 
 #[cfg(feature = "unwrap")]
-mod unwrap;
+pub mod unwrap;
 
-pub use foreach::*;
-pub use search::*;
 pub use tuple::*;
+
+pub use search::Search;
 
 #[cfg(feature = "any_array")]
 pub use any_array::*;
-
-#[cfg(feature = "unwrap")]
-pub use unwrap::*;
 
 /// Generate a tuple from a list of expressions.
 ///
@@ -134,7 +145,7 @@ pub use unwrap::*;
 /// # Examples
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, Unit};
 ///
 /// let tup = tuple!(1, "hello", 3.14);
 /// let tup2 = tuple!("world", 2;3, 9.8);   // Repeat `2` three times
@@ -147,7 +158,7 @@ pub use unwrap::*;
 /// Remember that macros do not directly evaluate expressions, so:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::tuple;
 ///
 /// let mut x = 0;
 /// assert_eq!(tuple!({x += 1; x}; 3), tuple!(1, 2, 3));
@@ -167,7 +178,7 @@ pub use tuplez_macros::tuple;
 /// # Examples
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, tuple_t};
 ///
 /// let tup = <tuple_t!(i32, f64, String)>::default();
 /// assert_eq!(tup, tuple!(0, 0.0, String::new()));
@@ -199,7 +210,7 @@ pub use tuplez_macros::tuple_t;
 /// the following elements will not be matched. For example:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, tuple_pat};
 ///
 /// let tup = tuple!(3.14, "hello", 1, [9.8]);
 /// let tuple_pat!(a, b, c) = tup;
@@ -211,7 +222,7 @@ pub use tuplez_macros::tuple_t;
 /// If you want the last pattern to match all remaining elements, you can add a `#` mark:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, tuple_pat};
 ///
 /// let tup = tuple!(3.14, "hello", 1, [9.8]);
 /// let tuple_pat!(# a, b, c) = tup;
@@ -224,7 +235,7 @@ pub use tuplez_macros::tuple_t;
 /// the last pattern still matches a tuple containing only one element:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, tuple_pat};
 ///
 /// let tup = tuple!(3.14, "hello", 1, [9.8]);
 /// let tuple_pat!(# a, b, c, d) = tup;
@@ -237,7 +248,7 @@ pub use tuplez_macros::tuple_t;
 /// In this case, just remove the `#` mark. Or, you can also add an extra `_` pattern to unpack the last tuple:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, tuple_pat};
 ///
 /// let tup = tuple!(3.14, "hello", 1, [9.8]);
 /// let tuple_pat!(# a, b, c, d, _) = tup;
@@ -250,8 +261,8 @@ pub use tuplez_macros::tuple_pat;
 
 /// Get the element at a specific index of the tuple.
 ///
-/// The [`ref_of()`](crate::Search::ref_of()) and [`mut_of()`](crate::Search::mut_of()) provide another way to
-/// get elements by their type.
+/// The [`ref_of()`](crate::search::Search::ref_of()) and [`mut_of()`](crate::Search::mut_of())
+/// provide another way to get elements by their type.
 ///
 /// # Syntax
 ///
@@ -278,7 +289,7 @@ pub use tuplez_macros::tuple_pat;
 /// You can use `&` and `&mut` directly on the output of [`get!`], like:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{get, tuple};
 ///
 /// fn add(x: &i32, y: &i32) -> i32 { x + y }
 ///
@@ -300,7 +311,7 @@ pub use tuplez_macros::tuple_pat;
 /// It's not a problem for nested tuples either:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{get, tuple};
 ///
 /// fn push_world(s: &mut String) {
 ///     s.push_str(" world");
@@ -314,7 +325,8 @@ pub use tuplez_macros::get;
 
 /// Take the element at a specific index of the tuple and get the remainder.
 ///
-/// When the type of element is provided instead of its index, this macro expands to [`take()`](crate::Search::take()).
+/// When the type of element is provided instead of its index, this macro expands to
+/// [`take()`](crate::Search::take()).
 ///
 /// The [`Popable`] also provide methods to pop elements from the front or back of the tuple.
 ///
@@ -333,7 +345,7 @@ pub use tuplez_macros::get;
 /// Use indexes:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{take, tuple};
 ///
 /// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
 /// let (element, remainder) = take!(tup; 2);
@@ -349,7 +361,7 @@ pub use tuplez_macros::get;
 /// Use types:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{take, tuple};
 ///
 /// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
 /// let (element, remainder) = take!(tup; &str);
@@ -374,7 +386,7 @@ pub use tuplez_macros::take;
 /// # Examples
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{split_at, tuple};
 ///
 /// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
 ///
@@ -391,3 +403,192 @@ pub use tuplez_macros::take;
 /// assert_eq!(right, tuple!());
 /// ```
 pub use tuplez_macros::split_at;
+
+/// Provides a simple way to build a functor that implements [`Mapper`](crate::foreach::Mapper).
+///
+/// # Syntax
+///
+/// ```text
+/// Generic = [Lifetime1, Lifetime2, ...] [Type1 [: Bound1], Type2 [: Bound2], ...]
+/// Rule    = [ < Generic > ] | Variable : InputType | [-> OutputType] { Body }
+///
+/// mapper!( [Rule1 Rule2 ... ] )
+/// ```
+///
+/// *`[` and `]` only indicate the optional content but not that they need to be input.*
+///
+/// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
+///
+/// # Explanation
+///
+/// A mapping rule is much like a closure, except that it must annotate the argument type and the return type:
+///
+/// ```text
+/// |x: i32| -> i64 { x as i64 }
+/// ```
+///
+/// Also supports adding `mut`:
+///
+/// ```text
+/// |mut x: i32| -> i64 { x += 1; x as i64 }
+/// ```
+///
+/// If the return value requires a lifetime, you need to explicitly introduce the lifetime annotation, since Rust binds the lifetime
+/// of return value to the functor instead of the element by default:
+///
+/// ```text
+/// <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
+/// ```
+///
+/// You can omit the return type when the return type is the same as the element type.
+/// Note: Do not misunderstand that the return type is automatically deduced or is a `()`.
+///
+/// ```text
+/// |x: i32| { x + 1 }
+/// ```
+///
+/// You can also introduce generic types like this:
+///
+/// ```text
+/// <T> |x: Option<T>| -> T { x.unwrap() }
+/// ```
+///
+/// Many times, you may also need to add bounds to the generic type:
+///
+/// ```text
+/// <T: ToString> |x: Option<T>| -> String { x.unwrap().to_string() }
+/// ```
+///
+/// Construct mapping rules for all element types in the tuple,
+/// and then combine them in the [`mapper!`](crate::mapper!) macro to traverse the tuple:
+///
+/// ```
+/// use tuplez::{mapper, tuple, TupleLike};
+///
+/// let tup = tuple!(1, "hello", Some(3.14)).foreach(mapper! {
+///     |mut x: i32| -> i64 { x += 1; x as i64 }
+///     <T: ToString> |x: Option<T>| -> String { x.unwrap().to_string() }
+///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
+/// });
+/// assert_eq!(tup, tuple!(2i64, b"hello" as &[u8], "3.14".to_string()));
+/// ```
+///
+/// Tip: If you don't want to consume the tuple, call its [`as_ref()`](crate::TupleLike::as_ref()) before traversing.
+/// Likewise, if you want to modify elements of tuple, call its [`as_mut()`](crate::TupleLike::as_mut()) before traversing.
+///
+/// ```
+/// use tuplez::{mapper, tuple, TupleLike};
+///
+/// let mut tup = tuple!(1, "hello", Some(3.14));
+/// let tup2 = tup.as_ref().foreach(mapper!{
+///     |x: &i32| -> i32 { *x + 1 }
+///     <T: ToString> |x: &Option<T>| -> String { x.as_ref().unwrap().to_string() }
+///     <'a> |x: &&'a str| -> &'a [u8] { x.as_bytes() }
+/// });
+/// assert_eq!(tup2, tuple!(2, b"hello" as &[u8], "3.14".to_string()));
+/// assert_eq!(tup, tuple!(1, "hello", Some(3.14)));  // And the original tuple is not consumed
+///
+/// _ = tup.as_mut().foreach(mapper!{
+///     |x: &mut i32| -> () { *x += 1; }
+///     <T: ToString> |x: &mut Option<T>| -> () { x.take(); }
+///     |x: &mut &str| -> () { *x = "world" }
+/// });
+/// assert_eq!(tup, tuple!(2, "world", None));
+/// ```
+pub use tuplez_macros::mapper;
+
+/// Provides a simple way to build a folder that implements [`Folder`](crate::fold::Folder).
+///
+/// # Syntax
+///
+/// ```text
+/// Generic = [Lifetime1, Lifetime2, ...] [Type1 [: Bound1], Type2 [: Bound2], ...]
+/// Rule    = [ < Generic > ] | Variable1, Variable2 : InputType | { Body }
+///
+/// folder!( OutputType; [Rule1 Rule2 ... ] )
+/// ```
+///
+/// *`[` and `]` only indicate the optional content but not that they need to be input.*
+///
+/// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
+///
+/// # Explanation
+///
+/// A folding rule is much like a closure, except that it must annotate the element type:
+///
+/// ```text
+/// |acc, x: i32| { acc + x }
+/// ```
+///
+/// NOTE: You'd better not annotate types for the accumulation value and return value,
+/// because they must to be annotated uniformly. Of course you can do that,
+/// but there would be no advantage other than potential compilation errors.
+///
+/// Also supports adding `mut`:
+///
+/// ```text
+/// |mut acc, mut x: i32| -> i64 { acc += 1; x += 1; acc + x }
+/// ```
+///
+/// You can also introduce generic types like this:
+///
+/// ```text
+/// <T: ToString> |x: Option<T>| { x.unwrap().to_string() }
+/// ```
+///
+/// You need to determine the type of the accumulation value, for example, `i32`.
+/// Then, construct folding rules for all element types in the tuple,
+/// and then combine them in the [`folder!`](crate::folder!) macro to folding the tuple:
+///
+/// ```
+/// use std::convert::AsRef;
+/// use tuplez::{folder, tuple, TupleLike};
+///
+/// let tup = tuple!(1, "2", 3.0);
+/// let result = tup.fold(
+///     folder!{i32;        // Annotate the accumulation value type
+///         |acc, x: i32| { acc + x }
+///         |acc, x: f32| { acc + (x as i32) }
+///         // `str` is a DST, so `?Sized` bound is required.
+///         <T: AsRef<str> + ?Sized > |acc, x: &T| { acc + x.as_ref().parse::<i32>().unwrap() }
+///     },
+///     0
+/// );
+/// assert_eq!(result, 6);
+/// ```
+pub use tuplez_macros::folder;
+
+/// Provides a simple way to build a folder that implements [`Folder`](crate::fold::Folder).
+///
+/// # Syntax
+///
+/// ```text
+/// seq_folder!( [ Closure1, Closure2, ...] )
+/// ```
+///
+/// # Explanation
+///
+/// Unlike [`folder!`], the [`seq_folder!`] does not do any processing of closures and just wraps them.
+/// So your input must fully conform to Rust's closure syntax, and this means:
+///
+/// 1. You cannot introduce generic types and lifetimes like [`folder!`].
+/// 2. You don't need to add braces for closures that only have a single expression, but instead you
+/// need to add commas between closures to separate them.
+///
+/// For example:
+///
+/// ```
+/// use tuplez::{fold::SeqFolder, seq_folder, tuple, TupleLike};
+///
+/// let tup = tuple!(1, "2", 3.0);
+/// let folder = seq_folder!(
+///     |acc, x| (acc + x) as f64,
+///     |acc: f64, x: &str| acc.to_string() + x,
+///     |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
+/// );
+/// let tup_folder = folder.to_tuple();
+/// let folder = SeqFolder::from(tup_folder);
+/// let result = tup.fold(folder, 0);
+/// assert_eq!(result, 15);
+/// ```
+pub use tuplez_macros::seq_folder;

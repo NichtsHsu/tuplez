@@ -1,4 +1,4 @@
-use crate::{tuple, tuple_t, Foreach};
+use crate::{fold::Foldable, foreach::Foreach, tuple, tuple_t};
 use std::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -8,10 +8,10 @@ use std::ops::{
 ///
 /// Compared with [`Tuple`] type, the unit type does not implement the [`Popable`] trait.
 ///
-/// Suggestion: Use the parameterless [`tuple!`] macro to create a unit:
+/// Suggestion: Use the parameterless [`tuple!`] macro to create an unit:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::tuple;
 /// let unit = tuple!();
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -26,21 +26,21 @@ pub struct Unit;
 /// You can create a tuple quickly and easily using the [`tuple!`] macro:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::tuple;
 /// let tup = tuple!(1, "hello", 3.14);
 /// ```
 ///
 /// Use `;` to indicate repeated elements:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::tuple;
 /// assert_eq!(tuple!(1.0, 2;3, "3"), tuple!(1.0, 2, 2, 2, "3"));
 /// ```
 ///
 /// Remember that macros do not directly evaluate expressions, so:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::tuple;
 ///
 /// let mut x = 0;
 /// assert_eq!(tuple!({x += 1; x}; 3), tuple!(1, 2, 3));
@@ -62,7 +62,8 @@ pub struct Unit;
 ///
 /// ```
 /// use std::mem::size_of;
-/// use tuplez::*;
+/// use tuplez::{Tuple, Unit};
+///
 /// assert_eq!(size_of::<(i32, f64, &str)>(),
 ///     size_of::<Tuple<i32, Tuple<f64, Tuple<&str, Unit>>>>());
 /// ```
@@ -81,17 +82,17 @@ pub struct Unit;
 /// In most cases, `Tuple` or `Tuple<_, _>` is sufficient to meet the syntax requirements:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::Tuple;
 ///
 /// let tup = Tuple::from((1, "hello", 3.14)); // or
 /// let tup: Tuple<_, _> = From::from((1, "hello", 3.14));
 /// ```
 ///
-/// But sometimes, you may still need to specify the complete tuple type explicitly.
+/// But sometimes, you may still need to annotate the complete tuple type explicitly.
 /// At this point, you can use the [`tuple_t!`](crate::tuple_t) macro to generate it:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, tuple_t};
 ///
 /// let tup: tuple_t!(i32, String, f64) = Default::default();
 /// assert_eq!(tup, tuple!(0, String::new(), 0.0));
@@ -107,7 +108,7 @@ pub struct Unit;
 /// Use `;` to indicate repeated types:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, tuple_t};
 ///
 /// let tup: tuple_t!(i32, f64;3, i32) = tuple!(1, 2.0, 3.0, 4.0, 5);
 /// ```
@@ -118,7 +119,7 @@ pub struct Unit;
 /// the only restriction is that the index must be an integer literal:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{get, tuple};
 ///
 /// let tup = tuple!(1, "hello", 3.14);
 /// assert_eq!(get!(tup; 0), 1);
@@ -137,7 +138,7 @@ pub struct Unit;
 /// ... so, here's an example of modifying elements:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{get, tuple};
 ///
 /// fn add_one(x: &mut i32) { *x += 1; }
 ///
@@ -151,7 +152,7 @@ pub struct Unit;
 /// Any tuple can push further elements, or join another one, with no length limit.
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, TupleLike};
 ///
 /// let tup = tuple!();
 ///
@@ -171,7 +172,7 @@ pub struct Unit;
 /// [`Unit`]s are not [`Popable`], and all [`Tuple`]s are [`Popable`]:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{Popable, tuple};
 ///
 /// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
 ///
@@ -197,7 +198,7 @@ pub struct Unit;
 /// The [`take!`](crate::take!) macro can take out an element by its index or type:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{take, tuple};
 ///
 /// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
 ///
@@ -214,7 +215,7 @@ pub struct Unit;
 /// Like the [`get!`](crate::get) macro, the index must be an integer literal:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{split_at, tuple};
 ///
 /// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
 ///
@@ -240,7 +241,7 @@ pub struct Unit;
 /// For example:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::tuple;
 ///
 /// let tup = tuple!(false, true, 26u8);            // All elements implement `Not`
 /// assert_eq!(!tup, tuple!(true, false, 229u8));   // So `Tuple` also implements `Not`
@@ -256,7 +257,7 @@ pub struct Unit;
 /// For example:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::tuple;
 ///
 /// let tup1 = tuple!(5, "hello ".to_string());
 /// let tup2 = tuple!(4, "world");
@@ -269,7 +270,7 @@ pub struct Unit;
 /// This is an example of generating Fibonacci numbers based on [`Tuple`]s:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{tuple, Tuple, TupleLike, Unit};
 ///
 /// trait Fibonacci {
 ///     const CURRENT: usize;
@@ -306,17 +307,17 @@ pub struct Unit;
 ///
 /// # Traverse tuples
 ///
-/// You can traverse tuples by [`map()`](TupleLike::map()) (or [`foreach()`](Foreach::foreach())).
+/// You can traverse tuples by [`foreach()`](TupleLike::foreach()).
 ///
-/// Call [`map()`](TupleLike::map()) on a tuple requires a functor implementing [`Mapper`](crate::Mapper) as the paramter.
-/// Check its documentation page for examples.
+/// Call [`foreach()`](TupleLike::foreach()) on a tuple requires a functor implementing
+/// [`Mapper`](crate::foreach::Mapper) as the paramter. Check its documentation page for examples.
 ///
-/// However, here is a [`mapper!`] macro that can help you quickly generate a simple functor:
+/// However, here is a [`mapper!`](crate::mapper!) macro that can help you quickly build a simple functor:
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{mapper, tuple, TupleLike};
 ///
-/// let tup = tuple!(1, "hello", 3.14).map(mapper!{
+/// let tup = tuple!(1, "hello", 3.14).foreach(mapper!{
 ///     |x: i32| -> i64 { x as i64 }
 ///     |x: f32| -> String { x.to_string() }
 ///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
@@ -324,10 +325,82 @@ pub struct Unit;
 /// assert_eq!(tup, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
 /// ```
 ///
-/// Check the documentation pages of [`mapper!`] macro for detailed syntax.
+/// Check the documentation pages of [`mapper!`](crate::mapper!) macro for detailed syntax.
 ///
 /// NOTE: Traversing a tuple will consume it. If this is not what you want, call [`as_ref()`](TupleLike::as_ref())
 /// or [`as_mut()`](TupleLike::as_mut()) to create a new tuple that references its all members before traversing.
+///
+/// # Fold tuples
+///
+/// You can fold tuples by [`fold()`](TupleLike::fold()).
+///
+/// Call [`fold()`](TupleLike::fold()) on a tuple requires a folder implementing
+/// [`Folder`](crate::fold::Folder) as the paramter. Check its documentation page for examples.
+///
+/// However, here are three ways you can quickly build a folder.
+///
+/// ## Fold tuples by element types
+///
+/// The [`folder!`](crate::folder!) macro helps you build a folder that folds tuples according to their element types.
+///
+/// For example:
+///
+/// ```
+/// use tuplez::{folder, tuple, TupleLike};
+///
+/// let tup = tuple!(Some(1), "2", Some(3.0));
+/// let result = tup.fold(
+///     folder! { String; // Type of `acc` of all closures must be the same and annotated at the front
+///         |acc, x: &str| { acc + &x.to_string() }
+///         <T: ToString> |acc, x: Option<T>| { acc + &x.unwrap().to_string() }
+///     },
+///     String::new(),
+/// );
+/// assert_eq!(result, "123".to_string());
+/// ```
+///
+/// ## Fold tuples in order of their elements
+///
+/// The [`seq_folder!`](crate::seq_folder!) macro helps you build a folder that folds tuples in order of their elements.
+///
+/// For example:
+///
+/// ```
+/// use tuplez::{seq_folder, tuple, TupleLike};
+///
+/// let tup = tuple!(1, "2", 3.0);
+/// let result = tup.fold(
+///     seq_folder!(
+///         |acc, x| (acc + x) as f64,
+///         |acc: f64, x: &str| acc.to_string() + x,
+///         |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
+///     ),  // Type of `acc` of each closure is the return type of the previous closure.
+///     0,
+/// );
+/// assert_eq!(result, 15);
+/// ```
+///
+/// ## Fold tuples in order of their elements, but collecting results in a tuple
+///
+/// You can create a new tuple with the same number of elements, whose elements are all callable ([`FnOnce`]),
+/// then, you can use that tuple as a folder.
+///
+/// The outputs will be collected into a tuple:
+///
+/// ```
+/// use tuplez::{tuple, TupleLike};
+///
+/// let tup = tuple!(1, 2, 3);
+/// let result = tup.fold(
+///     tuple!(
+///         |x| x as f32,
+///         |x: i32| x.to_string(),
+///         |x: i32| Some(x),
+///     ),
+///     tuple!(),
+/// );
+/// assert_eq!(result, tuple!(1.0, "2".to_string(), Some(3)));
+/// ```
 ///
 /// # Convert from/to primitive tuples
 ///
@@ -337,7 +410,7 @@ pub struct Unit;
 /// the interfaces for converting from/to primitive tuple types is only implemented for [`Tuple`]s with no more than 32 elements.
 ///
 /// ```
-/// use tuplez::*;
+/// use tuplez::{ToPrimitive, tuple, Tuple, tuple_t};
 ///
 /// let tup = tuple!(1, "hello", 3.14);
 /// let prim_tup = (1, "hello", 3.14);
@@ -373,7 +446,7 @@ pub struct Unit;
 /// // Enable Rust's `generic_const_exprs` feature if you enable tuplez's `any_array` feature.
 /// #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
 ///
-/// use tuplez::*;
+/// use tuplez::{ToArray, tuple, tuple_t};
 ///
 /// assert_eq!(tuple!(1, 2, 3, 4, 5, 6).to_array(), [1, 2, 3, 4, 5, 6]);
 /// assert_eq!(<tuple_t!(i32; 4)>::from([1, 2, 3, 4]), tuple!(1, 2, 3, 4));
@@ -445,7 +518,7 @@ pub trait TupleLike {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, TupleLike};
     /// assert_eq!(tuple!(1, "hello", 3.14).len(), 3);
     /// ```
     fn len(&self) -> usize {
@@ -457,7 +530,7 @@ pub trait TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, TupleLike, tuple_t};
     ///
     /// let tup = tuple!([1, 2], "hello".to_string());
     /// let tup_ref: tuple_t!(&[i32; 2], &String) = tup.as_ref();
@@ -470,7 +543,7 @@ pub trait TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{get, tuple, TupleLike};
     ///
     /// let mut tup = tuple!(1, "hello");
     /// let tup_mut = tup.as_mut();
@@ -485,7 +558,7 @@ pub trait TupleLike {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, TupleLike};
     ///
     /// let tup = tuple!(1, "hello", 3.14);
     /// let tup2 = tup.push(44);
@@ -498,7 +571,7 @@ pub trait TupleLike {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, TupleLike};
     ///
     /// let tup = tuple!(1, "hello", 3.14);
     /// let tup2 = tup.push_front(44);
@@ -514,7 +587,7 @@ pub trait TupleLike {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, TupleLike};
     ///
     /// let tup = tuple!(1, "hello", 3.14);
     /// let tup2 = tup.rev();
@@ -527,7 +600,7 @@ pub trait TupleLike {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, TupleLike};
     ///
     /// let tup = tuple!(1, "hello", 3.14);
     /// let tup2 = tuple!(44, "world");
@@ -543,7 +616,7 @@ pub trait TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, TupleLike};
     ///
     /// let tup = tuple!(1, "hello", 3.14);
     /// assert_eq!(tup.to_some(), tuple!(Some(1), Some("hello"), Some(3.14)));
@@ -557,32 +630,72 @@ pub trait TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{tuple, TupleLike};
     ///
     /// let tup = tuple!(1, "hello", 3.14);
     /// assert_eq!(tup.to_ok::<()>(), tuple!(Ok(1), Ok("hello"), Ok(3.14)));
     /// ```
     fn to_ok<E>(self) -> Self::ToOkOutput<E>;
 
-    /// Same as [`foreach()`](Foreach::foreach()), this method is provided to make [`TupleLike`] trait more comprehensive.
+    /// Traverse the tuple, and collect the output of traversal into a new tuple.
+    ///
+    /// Check out [`Mapper`](crate::foreach::Mapper)'s documentation page to learn how to build
+    /// a functor that can be passed to [`foreach()`](TupleLike::foreach()).
+    ///
+    /// NOTE: Traverse a tuple will consume it. If this is not what you want, call [`as_ref()`](TupleLike::as_ref())
+    /// or [`as_mut()`](TupleLike::as_mut()) to create a new tuple that references its all members before traversing.
+    ///
+    /// Tip: [`foreach()`](TupleLike::foreach) traverses elements by their types.
+    /// If you are looking for a way to traverse elements by their order, then what you are looking for is to
+    /// [pass a tuple containing callables into `fold()` method](Tuple#fold-tuples-in-order-of-their-elements-but-collecting-results-in-a-tuple).
     ///
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{mapper, tuple, TupleLike};
     ///
-    /// let tup = tuple!(1, "hello", 3.14).map(mapper!{
+    /// let tup = tuple!(1, "hello", 3.14).foreach(mapper!{
     ///     |x: i32| -> i64 { x as i64 }
     ///     |x: f32| -> String { x.to_string() }
     ///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
     /// });
     /// assert_eq!(tup, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
     /// ```
-    fn map<F>(self, f: &mut F) -> <Self as Foreach<F>>::Output
+    fn foreach<F>(self, f: &mut F) -> <Self as Foreach<F>>::Output
     where
         Self: Foreach<F> + Sized,
     {
-        self.foreach(f)
+        Foreach::<F>::foreach(self, f)
+    }
+
+    /// Fold the tuple.
+    ///
+    /// Check out [`Folder`](crate::fold::Folder)'s documentation page to learn how to build
+    /// a folder that can be passed to [`foreach()`](TupleLike::foreach()).
+    ///
+    /// NOTE: Fold a tuple will consume it. If this is not what you want, call [`as_ref()`](TupleLike::as_ref())
+    /// or [`as_mut()`](TupleLike::as_mut()) to create a new tuple that references its all members before folding.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{folder, tuple, TupleLike};
+    ///
+    /// let tup = tuple!(Some(1), "2", Some(3.0));
+    /// let result = tup.fold(
+    ///     folder! { String; // Type of `acc` of all closures must be the same and annotated at the front
+    ///         |acc, x: &str| { acc + &x.to_string() }
+    ///         <T: ToString> |acc, x: Option<T>| { acc + &x.unwrap().to_string() }
+    ///     },
+    ///     String::new(),
+    /// );
+    /// assert_eq!(result, "123".to_string());
+    /// ```
+    fn fold<F, Acc>(self, f: F, acc: Acc) -> <Self as Foldable<F, Acc>>::Output
+    where
+        Self: Foldable<F, Acc> + Sized,
+    {
+        Foldable::<F, Acc>::fold(self, f, acc)
     }
 }
 
@@ -716,7 +829,7 @@ pub trait Popable {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{Popable, tuple};
     ///
     /// let tup = tuple!(1, "hello", 3.14);
     /// let (tup2, popped) = tup.pop();
@@ -730,7 +843,7 @@ pub trait Popable {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{Popable, tuple};
     ///
     /// let tup = tuple!(1, "hello", 3.14);
     /// let (tup2, popped) = tup.pop_front();
@@ -801,7 +914,7 @@ pub trait Rotatable {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{Rotatable, tuple};
     ///
     /// let tup = tuple!(1, "2", 3.0, 4);
     /// let tup2 = tup.rot_l();
@@ -814,7 +927,7 @@ pub trait Rotatable {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{Rotatable, tuple};
     ///
     /// let tup = tuple!(1, "2", 3.0, 4);
     /// let tup2 = tup.rot_r();
@@ -869,7 +982,7 @@ pub trait ToPrimitive {
     /// # Examples
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{ToPrimitive, tuple};
     ///
     /// let tup = tuple!(1, "2", 3.0, 4);
     /// let prim = tup.primitive();

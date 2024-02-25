@@ -1,3 +1,7 @@
+//! Provides the ability to search tuple elements by type.
+//!
+//! Check the documentation page of [`Search`] for details.
+
 use crate::{Tuple, TupleLike};
 
 /// Helper class for [`Search`], indicates that the current element is the one searched for.
@@ -9,6 +13,10 @@ pub struct Searching<Result>(Result);
 /// Search for an element of a specific type in a tuple.
 ///
 /// There is currently a restriction: only one element in the tuple can be of the type being searched.
+///
+/// * Q: Why not make them member methods of [`TupleLike`]?
+///
+///   A: Like [`Popable`](crate::Popable), [`Unit`](crate::Unit) has zero element and cannot search elements on it.
 pub trait Search<T, Result>: TupleLike {
     /// The type of the remainder of the tuple after taking out the searched element.
     type TakeRemainder: TupleLike;
@@ -24,7 +32,7 @@ pub trait Search<T, Result>: TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{Search, tuple};
     ///
     /// let tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
     /// let (value, remainder): (i32, _) = tup.take();      // Add type annotation for `value`
@@ -35,7 +43,7 @@ pub trait Search<T, Result>: TupleLike {
     /// If you cannot add a type annotation, you can also use the [`take!`](crate::take!) macro:
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{take, tuple};
     ///
     /// let tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
     /// let (value, remainder) = take!(tup; i32);
@@ -53,7 +61,7 @@ pub trait Search<T, Result>: TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{Search, tuple};
     ///
     /// let tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
     /// let arr: &[i32; 3] = tup.ref_of();
@@ -70,7 +78,7 @@ pub trait Search<T, Result>: TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::*;
+    /// use tuplez::{Search, tuple};
     ///
     /// let mut tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
     /// let s: &mut &str = tup.mut_of();
