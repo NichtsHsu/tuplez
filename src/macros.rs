@@ -104,7 +104,7 @@ macro_rules! __tuple_traits_impl {
     };
 }
 
-/// Provides a simple way to create a functor that implements [`Mapper`](crate::mapper::Mapper).
+/// Provides a simple way to create a functor that implements [`Mapper`](crate::Mapper).
 ///
 /// # Syntax
 ///
@@ -351,7 +351,7 @@ macro_rules! mapper {
     };
 }
 
-/// Provides a simple way to create a functor that implements [`MapperMut`](crate::mapper::MapperMut).
+/// Provides a simple way to create a functor that implements [`MapperMut`](crate::MapperMut).
 ///
 /// # Syntax
 ///
@@ -448,7 +448,7 @@ macro_rules! mapper_mut {
     };
 }
 
-/// Provides a simple way to create a functor that implements [`MapperOnce`](crate::mapper::MapperOnce).
+/// Provides a simple way to create a functor that implements [`MapperOnce`](crate::MapperOnce).
 ///
 /// # Syntax
 ///

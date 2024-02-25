@@ -32,7 +32,7 @@
 //! # Functionality
 //!
 //! * [Create tuples](tuple!) with any number of elements.
-//! * [Access elements](get!) in a tuple at any index.
+//! * [Access elements](get!) in a tuple at any index, or [by their types](Search).
 //! * [Push element](TupleLike::push()) to a tuple or [pop element](Popable::pop()) from a tuple.
 //! * [Join](TupleLike::join()) two tuples or [split](split_at!) a tuple into two parts.
 //! * [Reverse](TupleLike::rev()), [left rotate](Rotatable::rot_l()), or [right rotate](Rotatable::rot_r()) a tuple.
@@ -102,6 +102,7 @@
 #[macro_use]
 mod macros;
 mod foreach;
+mod search;
 mod tuple;
 
 #[cfg(feature = "any_array")]
@@ -111,6 +112,7 @@ mod any_array;
 mod unwrap;
 
 pub use foreach::*;
+pub use search::*;
 pub use tuple::*;
 
 #[cfg(feature = "any_array")]
@@ -247,6 +249,9 @@ pub use tuplez_macros::tuple_t;
 pub use tuplez_macros::tuple_pat;
 
 /// Get the element at a specific index of the tuple.
+///
+/// The [`ref_of()`](crate::Search::ref_of()) and [`mut_of()`](crate::Search::mut_of()) provide another way to
+/// get elements by their type.
 ///
 /// # Syntax
 ///
