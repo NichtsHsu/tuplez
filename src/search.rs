@@ -17,7 +17,9 @@ pub trait Search<T, Result>: TupleLike {
     ///
     /// Add a type annotation to the searched element to let [`take()`](Search::take()) know which one you want.
     ///
-    /// If you want to take out the first or last element, regardless of their type, see [`Popable`][crate::Popable].
+    /// If you want to take out the element at a specific index, see [`take!`](crate::take!).
+    ///
+    /// If you want to take out the first or last element, see [`Popable`][crate::Popable].
     ///
     /// # Example
     ///
@@ -25,7 +27,18 @@ pub trait Search<T, Result>: TupleLike {
     /// use tuplez::*;
     ///
     /// let tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
-    /// let (value, remainder): (i32, _) = tup.take();
+    /// let (value, remainder): (i32, _) = tup.take();      // Add type annotation for `value`
+    /// assert_eq!(value, 5);
+    /// assert_eq!(remainder, tuple!(3.14, "hello", [1, 2, 3]));
+    /// ```
+    ///
+    /// If you cannot add a type annotation, you can also use the [`take!`](crate::take!) macro:
+    ///
+    /// ```
+    /// use tuplez::*;
+    ///
+    /// let tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
+    /// let (value, remainder) = take!(tup; i32);
     /// assert_eq!(value, 5);
     /// assert_eq!(remainder, tuple!(3.14, "hello", [1, 2, 3]));
     /// ```

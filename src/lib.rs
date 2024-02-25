@@ -312,6 +312,57 @@ pub use tuplez_macros::tuple_pat;
 /// ```
 pub use tuplez_macros::get;
 
+/// Take the element at a specific index of the tuple and get the remainder.
+///
+/// When the type of element is provided instead of its index, this macro expands to [`take()`](crate::Search::take()).
+///
+/// The [`Popable`] also provide methods to pop elements from the front or back of the tuple.
+///
+/// # Syntax
+///
+/// 1. `take!(Expr; Index)`
+///
+///     **The index must be an integer literal** since procedural macros do not yet support evaluating constants.
+///
+/// 2. `take!(Expr; Type)`
+///
+///     There is currently a restriction: only one element in the tuple can be of the type being searched.
+///
+/// # Examples
+///
+/// Use indexes:
+///
+/// ```
+/// use tuplez::*;
+///
+/// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
+/// let (element, remainder) = take!(tup; 2);
+/// assert_eq!(element, 3.14);
+/// assert_eq!(remainder, tuple!(1, "hello", [1, 2, 3]));
+///
+/// let tup = tuple!(1);
+/// let (element, remainder) = take!(tup; 0);
+/// assert_eq!(element, 1);
+/// assert_eq!(remainder, tuple!());
+/// ```
+///
+/// Use types:
+///
+/// ```
+/// use tuplez::*;
+///
+/// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
+/// let (element, remainder) = take!(tup; &str);
+/// assert_eq!(element, "hello");
+/// assert_eq!(remainder, tuple!(1, 3.14, [1, 2, 3]));
+///
+/// let tup = tuple!(1);
+/// let (element, remainder) = take!(tup; i32);
+/// assert_eq!(element, 1);
+/// assert_eq!(remainder, tuple!());
+/// ```
+pub use tuplez_macros::take;
+
 /// Split the tuple into two tuples at a specific index.
 ///
 /// # Syntax

@@ -58,6 +58,39 @@ pub fn get(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
+pub fn take(input: TokenStream) -> TokenStream {
+    let result = parse_macro_input!(input as TupleTake);
+    match result {
+        TupleTake {
+            tup,
+            ext: IndexOrType::Index(index),
+        } => {
+            let tup = quote!( let tup_ = #tup );
+            let field = quote!(. 1);
+            let mut fields = vec![field.clone(); index];
+            let element = quote!( tup_ #(#fields)* . 0 );
+            let mut unpack = quote!( tup_ #(#fields)* . 1 );
+            for _ in 0..index {
+                _ = fields.pop();
+                unpack = quote!( Tuple( tup_ #(#fields)* . 0, #unpack ) )
+            }
+            quote!({
+                #tup ;
+                ( #element, #unpack )
+            })
+        }
+        TupleTake {
+            tup,
+            ext: IndexOrType::Type(ty),
+        } => quote!({
+            let (element_, remainder_): (#ty, _) = (#tup).take();
+            (element_, remainder_)
+        }),
+    }
+    .into()
+}
+
+#[proc_macro]
 pub fn split_at(input: TokenStream) -> TokenStream {
     let TupleIndex { tup, index } = parse_macro_input!(input as TupleIndex);
     let tup = quote!( let tup_ = #tup );
@@ -71,7 +104,7 @@ pub fn split_at(input: TokenStream) -> TokenStream {
     }
     quote!({
         #tup ;
-        ( #unpack, #other)
+        ( #unpack, #other )
     })
     .into()
 }

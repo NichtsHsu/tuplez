@@ -140,3 +140,39 @@ impl Parse for TupleIndex {
         Ok(TupleIndex { tup, index })
     }
 }
+
+pub enum IndexOrType {
+    Index(usize),
+    Type(Type),
+}
+
+pub struct TupleTake {
+    pub tup: Expr,
+    pub ext: IndexOrType,
+}
+
+impl Parse for TupleTake {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let tup: Expr = input.parse()?;
+        let _: Token![;] = input.parse()?;
+        if input.peek(LitInt) {
+            let index: LitInt = input.parse()?;
+            if !input.is_empty() {
+                return Err(input.error("expected end of macro invocation"));
+            }
+            let index: usize = index.base10_parse()?;
+            return Ok(TupleTake {
+                tup,
+                ext: IndexOrType::Index(index),
+            });
+        }
+        let ty: Type = input.parse()?;
+        if !input.is_empty() {
+            return Err(input.error("expected end of macro invocation"));
+        }
+        Ok(TupleTake {
+            tup,
+            ext: IndexOrType::Type(ty),
+        })
+    }
+}
