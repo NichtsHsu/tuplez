@@ -127,7 +127,7 @@ pub use unwrap::*;
 ///
 /// `tuple!( [ Expr1 [; Count], Expr2 [; Count], ... ] )`
 ///
-/// *The `[` and `]` markers only indicate optional content but not that the `[` and `]` need to be input.*
+/// *`[` and `]` only indicate the optional content but not that they need to be input.*
 ///
 /// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
 ///
@@ -160,7 +160,7 @@ pub use tuplez_macros::tuple;
 ///
 /// `tuple_t!([T0 [; Count], T1 [; Count], ... ])`
 ///
-/// *The `[` and `]` markers only indicate optional content but not that the `[` and `]` need to be input.*
+/// *`[` and `]` only indicate the optional content but not that they need to be input.*
 ///
 /// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
 ///
@@ -189,7 +189,7 @@ pub use tuplez_macros::tuple_t;
 ///
 /// `tuple_pat!([#] [Pat0 [; Count], Pat1 [; Count], ... ])`
 ///
-/// *The `[` and `]` markers only indicate optional content but not that the `[` and `]` need to be input.*
+/// *`[` and `]` only indicate the optional content but not that they need to be input.*
 ///
 /// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
 ///

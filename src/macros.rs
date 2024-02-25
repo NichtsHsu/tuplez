@@ -115,7 +115,7 @@ macro_rules! __tuple_traits_impl {
 /// mapper!( [Rule1 Rule2 ... ] )
 /// ```
 ///
-/// *The `[` and `]` markers only indicate optional content but not that the `[` and `]` need to be input.*
+/// *`[` and `]` only indicate the optional content but not that they need to be input.*
 ///
 /// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
 ///
