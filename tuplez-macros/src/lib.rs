@@ -60,12 +60,18 @@ pub fn get(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn split_at(input: TokenStream) -> TokenStream {
     let TupleIndex { tup, index } = parse_macro_input!(input as TupleIndex);
-    let mut unpack = quote!( (Unit, (#tup)) );
+    let tup = quote!( let tup_ = #tup );
+    let field = quote!(. 1);
+    let mut fields = vec![field.clone(); index];
+    let mut unpack = quote!(Unit);
+    let other = quote!( tup_ #(#fields)* );
     for _ in 0..index {
-        unpack = quote!({
-            let (splitted, Tuple(first, other)) = #unpack;
-            (splitted.push_back(first), other)
-        });
+        _ = fields.pop();
+        unpack = quote!( Tuple( tup_ #(#fields)* . 0, #unpack ) );
     }
-    unpack.into()
+    quote!({
+        #tup ;
+        ( #unpack, #other)
+    })
+    .into()
 }

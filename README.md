@@ -28,7 +28,7 @@ the primitive tuples.
 ## Functionality
 
 * Create tuples with any number of elements.
-* Access elements in a tuple at any index.
+* Access elements in a tuple at any index, or by their types.
 * Push element to a tuple or pop element from a tuple.
 * Join two tuples or split a tuple into two parts.
 * Reverse, left rotate, or right rotate a tuple.
