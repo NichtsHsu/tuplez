@@ -1,4 +1,4 @@
-use crate::{tuple, tuple_t};
+use crate::{tuple, tuple_t, Foreach};
 use std::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -306,9 +306,9 @@ pub struct Unit;
 ///
 /// # Traverse tuples
 ///
-/// You can traverse tuples by [`foreach()`](crate::Foreach::foreach()).
+/// You can traverse tuples by [`map()`](TupleLike::map()) (or [`foreach()`](Foreach::foreach())).
 ///
-/// Call [`foreach()`](crate::Foreach::foreach()) on a tuple requires a functor implementing [`Mapper`](crate::Mapper) as the paramter.
+/// Call [`map()`](TupleLike::map()) on a tuple requires a functor implementing [`Mapper`](crate::Mapper) as the paramter.
 /// Check its documentation page for examples.
 ///
 /// However, here is a [`mapper!`] macro that can help you quickly generate a simple functor:
@@ -316,7 +316,7 @@ pub struct Unit;
 /// ```
 /// use tuplez::*;
 ///
-/// let tup = tuple!(1, "hello", 3.14).foreach(mapper!{
+/// let tup = tuple!(1, "hello", 3.14).map(mapper!{
 ///     |x: i32| -> i64 { x as i64 }
 ///     |x: f32| -> String { x.to_string() }
 ///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
@@ -563,6 +563,27 @@ pub trait TupleLike {
     /// assert_eq!(tup.to_ok::<()>(), tuple!(Ok(1), Ok("hello"), Ok(3.14)));
     /// ```
     fn to_ok<E>(self) -> Self::ToOkOutput<E>;
+
+    /// Same as [`foreach()`](Foreach::foreach()), this method is provided to make [`TupleLike`] trait more comprehensive.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::*;
+    ///
+    /// let tup = tuple!(1, "hello", 3.14).map(mapper!{
+    ///     |x: i32| -> i64 { x as i64 }
+    ///     |x: f32| -> String { x.to_string() }
+    ///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
+    /// });
+    /// assert_eq!(tup, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
+    /// ```
+    fn map<F>(self, f: &mut F) -> <Self as Foreach<F>>::Output
+    where
+        Self: Foreach<F> + Sized,
+    {
+        self.foreach(f)
+    }
 }
 
 impl TupleLike for Unit {

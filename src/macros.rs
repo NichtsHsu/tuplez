@@ -165,7 +165,7 @@ macro_rules! __tuple_traits_impl {
 /// ```
 /// use tuplez::*;
 ///
-/// let tup = tuple!(1, "hello", Some(3.14)).foreach(mapper! {
+/// let tup = tuple!(1, "hello", Some(3.14)).map(mapper! {
 ///     |mut x: i32| -> i64 { x += 1; x as i64 }
 ///     <T: ToString> |x: Option<T>| -> String { x.unwrap().to_string() }
 ///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
@@ -180,7 +180,7 @@ macro_rules! __tuple_traits_impl {
 /// use tuplez::*;
 ///
 /// let mut tup = tuple!(1, "hello", Some(3.14));
-/// let tup2 = tup.as_ref().foreach(mapper!{
+/// let tup2 = tup.as_ref().map(mapper!{
 ///     |x: &i32| -> i32 { *x + 1 }
 ///     <T: ToString> |x: &Option<T>| -> String { x.as_ref().unwrap().to_string() }
 ///     <'a> |x: &&'a str| -> &'a [u8] { x.as_bytes() }
@@ -188,7 +188,7 @@ macro_rules! __tuple_traits_impl {
 /// assert_eq!(tup2, tuple!(2, b"hello" as &[u8], "3.14".to_string()));
 /// assert_eq!(tup, tuple!(1, "hello", Some(3.14)));  // And the original tuple is not consumed
 ///
-/// _ = tup.as_mut().foreach(mapper!{
+/// _ = tup.as_mut().map(mapper!{
 ///     |x: &mut i32| -> () { *x += 1; }
 ///     <T: ToString> |x: &mut Option<T>| -> () { x.take(); }
 ///     |x: &mut &str| -> () { *x = "world" }

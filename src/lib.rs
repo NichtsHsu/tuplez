@@ -81,7 +81,7 @@
 //!     tuple!(0.0, "hello world".to_string(), Some([1, 2, 3]))
 //! );
 //!
-//! let tup8 = tup7.foreach(mapper! {
+//! let tup8 = tup7.map(mapper! {
 //!     |x: f64| -> String { x.to_string() }
 //!     |x: Option<[i32; 3]>| -> String { format!("{:?}", x.unwrap()) }
 //!     |x: String| { x }
