@@ -112,7 +112,6 @@
 
 extern crate self as tuplez;
 
-#[macro_use]
 mod macros;
 pub mod fold;
 pub mod foreach;

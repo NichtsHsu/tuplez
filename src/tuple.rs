@@ -1,4 +1,4 @@
-use crate::{fold::Foldable, foreach::Foreach, tuple, tuple_t};
+use crate::{fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl};
 use std::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
