@@ -15,7 +15,7 @@ keywords = [ "tuple" ]
 
 [package]
 name = "tuplez"
-version = "0.3.2"
+version = "0.3.3"
 description = "Tuples represented in recursive form"
 authors.workspace = true
 license.workspace = true
