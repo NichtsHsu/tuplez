@@ -1,4 +1,4 @@
-use crate::{fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl};
+use crate::{fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*};
 use std::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -731,6 +731,40 @@ pub trait TupleLike {
     {
         Dot::<T>::dot(self, rhs)
     }
+
+    /// Zip two tuples.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    /// 
+    /// let tup = tuple!(1, 2.0, "3").zip(tuple!("4", 5, 6.0));
+    /// assert_eq!(tup, tuple!(tuple!(1, "4"), tuple!(2.0, 5), tuple!("3", 6.0)));
+    /// ```
+    fn zip<T>(self, rhs: T) -> <Self as Zippable<T>>::Output
+    where
+        Self: Zippable<T> + Sized,
+    {
+        Zippable::<T>::zip(self, rhs)
+    }
+
+    /// Zip two tuples, but output elements are primitive tuples.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    /// 
+    /// let tup = tuple!(1, 2.0, "3").zip2(tuple!("4", 5, 6.0));
+    /// assert_eq!(tup, tuple!((1, "4"), (2.0, 5), ("3", 6.0)));
+    /// ```
+    fn zip2<T>(self, rhs: T) -> <Self as Zippable<T>>::Output2
+    where
+        Self: Zippable<T> + Sized,
+    {
+        Zippable::<T>::zip2(self, rhs)
+    }
 }
 
 impl TupleLike for Unit {
@@ -1082,35 +1116,6 @@ __tuple_traits_impl! { 29; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15
 __tuple_traits_impl! { 30; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 T28 T29 }
 __tuple_traits_impl! { 31; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 T28 T29 T30 }
 __tuple_traits_impl! { 32; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 T28 T29 T30 T31 }
-
-/// Dot product operation.
-pub trait Dot<T = Self> {
-    /// Output type of the dot product operation.
-    type Output;
-
-    /// Performs the dot product operation.
-    fn dot(self, rhs: T) -> Self::Output;
-}
-
-impl Dot for Unit {
-    type Output = Unit;
-    fn dot(self, _: Self) -> Self::Output {
-        Self
-    }
-}
-
-impl<First1, Other1, First2, Other2> Dot<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: Mul<First2>,
-    Other1: Dot<Other2> + TupleLike,
-    Other2: TupleLike,
-    <Other1 as Dot<Other2>>::Output: Add<<First1 as Mul<First2>>::Output>,
-{
-    type Output = <<Other1 as Dot<Other2>>::Output as Add<<First1 as Mul<First2>>::Output>>::Output;
-    fn dot(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Dot::<Other2>::dot(self.1, rhs.1) + self.0 * rhs.0
-    }
-}
 
 impl<T> Add<T> for Unit {
     type Output = T;
