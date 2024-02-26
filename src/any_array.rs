@@ -1,5 +1,3 @@
-#![cfg(feature = "any_array")]
-
 use std::mem::MaybeUninit;
 use crate::{Tuple, TupleLike, Unit};
 
