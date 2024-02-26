@@ -512,10 +512,10 @@ pub trait TupleLike {
     /// The number of elements in the tuple.
     const LEN: usize;
 
-    /// Returns the number of elements in the tuple.
+    /// Get the number of elements in the tuple.
     /// MUST always return [`LEN`](TupleLike::LEN).
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use tuplez::{tuple, TupleLike};
@@ -523,6 +523,23 @@ pub trait TupleLike {
     /// ```
     fn len(&self) -> usize {
         Self::LEN
+    }
+
+    /// Check if tuple is empty.
+    ///
+    /// Always be `false` if tuple is [`Unit`],
+    /// and always be `true` if tuple is [`Tuple`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// assert_eq!(tuple!().is_empty(), true);
+    /// assert_eq!(tuple!(1, "hello", 3.14).is_empty(), false);
+    /// ```
+    fn is_empty(&self) -> bool {
+        Self::LEN == 0
     }
 
     /// Generate a tuple containing immutable references to all elements of the tuple.
