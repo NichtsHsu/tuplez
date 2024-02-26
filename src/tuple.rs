@@ -1130,8 +1130,8 @@ where
     }
 }
 
-impl<T> AddAssign<T> for Unit {
-    fn add_assign(&mut self, _: T) {}
+impl AddAssign for Unit {
+    fn add_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> AddAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
@@ -1145,9 +1145,9 @@ where
     }
 }
 
-impl<T> Sub<T> for Unit {
+impl Sub for Unit {
     type Output = Unit;
-    fn sub(self, _: T) -> Self::Output {
+    fn sub(self, _: Unit) -> Self::Output {
         Unit
     }
 }
@@ -1163,8 +1163,8 @@ where
     }
 }
 
-impl<T> SubAssign<T> for Unit {
-    fn sub_assign(&mut self, _: T) {}
+impl SubAssign for Unit {
+    fn sub_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> SubAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
@@ -1179,9 +1179,9 @@ where
 }
 
 impl<T> Mul<T> for Unit {
-    type Output = Unit;
-    fn mul(self, _: T) -> Self::Output {
-        Unit
+    type Output = T;
+    fn mul(self, rhs: T) -> T {
+        rhs
     }
 }
 
@@ -1196,8 +1196,8 @@ where
     }
 }
 
-impl<T> MulAssign<T> for Unit {
-    fn mul_assign(&mut self, _: T) {}
+impl MulAssign for Unit {
+    fn mul_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> MulAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
@@ -1211,9 +1211,9 @@ where
     }
 }
 
-impl<T> Div<T> for Unit {
+impl Div for Unit {
     type Output = Unit;
-    fn div(self, _: T) -> Self::Output {
+    fn div(self, _: Unit) -> Self::Output {
         Unit
     }
 }
@@ -1229,8 +1229,8 @@ where
     }
 }
 
-impl<T> DivAssign<T> for Unit {
-    fn div_assign(&mut self, _: T) {}
+impl DivAssign for Unit {
+    fn div_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> DivAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
@@ -1244,9 +1244,9 @@ where
     }
 }
 
-impl<T> Rem<T> for Unit {
+impl Rem for Unit {
     type Output = Unit;
-    fn rem(self, _: T) -> Self::Output {
+    fn rem(self, _: Unit) -> Self::Output {
         Unit
     }
 }
@@ -1262,8 +1262,8 @@ where
     }
 }
 
-impl<T> RemAssign<T> for Unit {
-    fn rem_assign(&mut self, _: T) {}
+impl RemAssign for Unit {
+    fn rem_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> RemAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
@@ -1278,9 +1278,9 @@ where
 }
 
 impl<T> BitAnd<T> for Unit {
-    type Output = Unit;
-    fn bitand(self, _: T) -> Self::Output {
-        Unit
+    type Output = T;
+    fn bitand(self, rhs: T) -> Self::Output {
+        rhs
     }
 }
 
@@ -1295,8 +1295,8 @@ where
     }
 }
 
-impl<T> BitAndAssign<T> for Unit {
-    fn bitand_assign(&mut self, _: T) {}
+impl BitAndAssign for Unit {
+    fn bitand_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> BitAndAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
@@ -1311,9 +1311,9 @@ where
 }
 
 impl<T> BitOr<T> for Unit {
-    type Output = Unit;
-    fn bitor(self, _: T) -> Self::Output {
-        Unit
+    type Output = T;
+    fn bitor(self, rhs: T) -> Self::Output {
+        rhs
     }
 }
 
@@ -1328,8 +1328,8 @@ where
     }
 }
 
-impl<T> BitOrAssign<T> for Unit {
-    fn bitor_assign(&mut self, _: T) {}
+impl BitOrAssign for Unit {
+    fn bitor_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> BitOrAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
@@ -1344,9 +1344,9 @@ where
 }
 
 impl<T> BitXor<T> for Unit {
-    type Output = Unit;
-    fn bitxor(self, _: T) -> Self::Output {
-        Unit
+    type Output = T;
+    fn bitxor(self, rhs: T) -> Self::Output {
+        rhs
     }
 }
 
@@ -1361,8 +1361,8 @@ where
     }
 }
 
-impl<T> BitXorAssign<T> for Unit {
-    fn bitxor_assign(&mut self, _: T) {}
+impl BitXorAssign for Unit {
+    fn bitxor_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> BitXorAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
@@ -1376,9 +1376,9 @@ where
     }
 }
 
-impl<T> Shl<T> for Unit {
+impl Shl for Unit {
     type Output = Unit;
-    fn shl(self, _: T) -> Self::Output {
+    fn shl(self, _: Unit) -> Self::Output {
         Unit
     }
 }
@@ -1394,8 +1394,8 @@ where
     }
 }
 
-impl<T> ShlAssign<T> for Unit {
-    fn shl_assign(&mut self, _: T) {}
+impl ShlAssign for Unit {
+    fn shl_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> ShlAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
@@ -1409,9 +1409,9 @@ where
     }
 }
 
-impl<T> Shr<T> for Unit {
+impl Shr for Unit {
     type Output = Unit;
-    fn shr(self, _: T) -> Self::Output {
+    fn shr(self, _: Unit) -> Self::Output {
         Unit
     }
 }
@@ -1427,8 +1427,8 @@ where
     }
 }
 
-impl<T> ShrAssign<T> for Unit {
-    fn shr_assign(&mut self, _: T) {}
+impl ShrAssign for Unit {
+    fn shr_assign(&mut self, _: Unit) {}
 }
 
 impl<First1, Other1, First2, Other2> ShrAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
