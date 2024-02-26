@@ -550,7 +550,7 @@ pub use tuplez_macros::mapper;
 ///         |acc, x: i32| { acc + x }
 ///         |acc, x: f32| { acc + (x as i32) }
 ///         // `str` is a DST, so `?Sized` bound is required.
-///         <T: AsRef<str> + ?Sized > |acc, x: &T| { acc + x.as_ref().parse::<i32>().unwrap() }
+///         <T: AsRef<str> + ?Sized> |acc, x: &T| { acc + x.as_ref().parse::<i32>().unwrap() }
 ///     },
 ///     0
 /// );
