@@ -54,7 +54,7 @@ pub trait Search<T, Result>: TupleLike {
 
     /// Get an immutable reference of the searched element.
     ///
-    /// Add a type annotation to the searched element to let [`ref_of()`](Search::ref_of()) know which one you want.
+    /// Add a type annotation to the searched element to let [`get_ref()`](Search::get_ref()) know which one you want.
     ///
     /// If you want to get the element by its index, see [`get!`](crate::get!);
     ///
@@ -64,14 +64,14 @@ pub trait Search<T, Result>: TupleLike {
     /// use tuplez::{Search, tuple};
     ///
     /// let tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
-    /// let arr: &[i32; 3] = tup.ref_of();
+    /// let arr: &[i32; 3] = tup.get_ref();
     /// assert_eq!(arr, &[1, 2, 3]);
     /// ```
-    fn ref_of(&self) -> &T;
+    fn get_ref(&self) -> &T;
 
     /// Get a mutable reference of the searched element.
     ///
-    /// Add a type annotation to the searched element to let [`mut_of()`](Search::mut_of()) know which one you want.
+    /// Add a type annotation to the searched element to let [`get_mut()`](Search::get_mut()) know which one you want.
     ///
     /// If you want to get the element by its index, see [`get!`](crate::get!);
     ///
@@ -81,11 +81,11 @@ pub trait Search<T, Result>: TupleLike {
     /// use tuplez::{Search, tuple};
     ///
     /// let mut tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
-    /// let s: &mut &str = tup.mut_of();
+    /// let s: &mut &str = tup.get_mut();
     /// *s = "world";
     /// assert_eq!(tup, tuple!(3.14, "world", 5, [1, 2, 3]));
     /// ```
-    fn mut_of(&mut self) -> &mut T;
+    fn get_mut(&mut self) -> &mut T;
 }
 
 impl<First, Other> Search<First, Searched> for Tuple<First, Other>
@@ -98,11 +98,11 @@ where
         (self.0, self.1)
     }
 
-    fn ref_of(&self) -> &First {
+    fn get_ref(&self) -> &First {
         &self.0
     }
 
-    fn mut_of(&mut self) -> &mut First {
+    fn get_mut(&mut self) -> &mut First {
         &mut self.0
     }
 }
@@ -118,11 +118,11 @@ where
         (value, Tuple(self.0, remainder))
     }
 
-    fn ref_of(&self) -> &T {
-        self.1.ref_of()
+    fn get_ref(&self) -> &T {
+        self.1.get_ref()
     }
 
-    fn mut_of(&mut self) -> &mut T {
-        self.1.mut_of()
+    fn get_mut(&mut self) -> &mut T {
+        self.1.get_mut()
     }
 }

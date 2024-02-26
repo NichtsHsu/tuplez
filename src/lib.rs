@@ -261,7 +261,7 @@ pub use tuplez_macros::tuple_pat;
 
 /// Get the element at a specific index of the tuple.
 ///
-/// The [`ref_of()`](crate::search::Search::ref_of()) and [`mut_of()`](crate::Search::mut_of())
+/// The [`get_ref()`](crate::search::Search::get_ref()) and [`get_mut()`](crate::Search::get_mut())
 /// provide another way to get elements by their type.
 ///
 /// # Syntax
