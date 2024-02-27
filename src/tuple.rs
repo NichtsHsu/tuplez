@@ -818,6 +818,9 @@ pub trait TupleLike {
     /// ```
     fn to_ok<E>(self) -> Self::ToOkOutput<E>;
 
+    /// tuple!(a, b, c).to_tuple_tuple() => tuple!(tuple!(a), tuple!(b), tuple!(c))
+    fn to_tuple_tuple(self) -> Self::ToTupleOutput;
+
     /// Traverse the tuple, and collect the output of traversal into a new tuple.
     ///
     /// Check out [`Mapper`](crate::foreach::Mapper)'s documentation page to learn how to build

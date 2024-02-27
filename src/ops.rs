@@ -278,3 +278,15 @@ where
         Tuple((self.0, rhs.0), Zippable::zip2(self.1, rhs.1))
     }
 }
+
+/// tuple!(tuple!(a, b), tuple!(c, d)).unzip() => (tuple!(a, c), tuple!(b, d))
+pub trait Unzippable<T> {}
+
+/// tuple!(tuple!(...), tuple!(...)).extend(tuple!(a, b));
+pub trait Extendable<T> {}
+
+/// tuple!(tuple!(...), tuple!(...)).combine(tuple!(...), tuple!(...));
+pub trait Combinable<T> {}
+
+/// tuple!(tuple!(a, b, c), tuple!(d, e)).shrink() => (tuple!(tuple!(a, b), tuple!(d)), tuple!(c, e))
+pub trait Shrinkable<T> {}
