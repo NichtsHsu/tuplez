@@ -688,7 +688,7 @@ pub trait TupleLike {
     /// If the elements of the tuple are all references, clone its elements to a new tuple.
     ///
     /// Much like [`cloned()`](TupleLike::cloned()), but can work on types like `&str` or slices.
-    /// 
+    ///
     /// # Example:
     ///
     /// ```
@@ -899,19 +899,40 @@ pub trait TupleLike {
     /// ```
     fn to_tuple(self) -> Self::ToTupleOutput;
 
-    /// Untuple a tuple, whose elements are all tuples with only one element.
+    /// Untuple a tuple, whose elements are all tuples.
     ///
     /// See [`to_tuple()`](TupleLike::to_tuple()) for the opposite operation.
+    ///
+    /// Also called [`flatten()`](TupleLike::flatten()).
     ///
     /// # Example
     ///
     /// ```
     /// use tuplez::{tuple, TupleLike};
     ///
-    /// let tup_tup = tuple!(tuple!(1), tuple!("hello"), tuple!(3.14));
+    /// let tup_tup = tuple!(tuple!(1, "hello"), tuple!(), tuple!(3.14));
     /// assert_eq!(tup_tup.untuple(), tuple!(1, "hello", 3.14));
     /// ```
     fn untuple(self) -> Self::UntupleOutput
+    where
+        Self: Untuplable + Sized,
+    {
+        Untuplable::untuple(self)
+    }
+
+    /// Flatten one level of nesting in the tuple.
+    ///
+    /// Also called [`untuple()`](TupleLike::untuple()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup_tup = tuple!(tuple!(1, "hello"), tuple!(), tuple!(3.14));
+    /// assert_eq!(tup_tup.flatten(), tuple!(1, "hello", 3.14));
+    /// ```
+    fn flatten(self) -> Self::UntupleOutput
     where
         Self: Untuplable + Sized,
     {

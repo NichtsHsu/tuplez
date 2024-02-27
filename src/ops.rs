@@ -366,14 +366,15 @@ impl Untuplable for Unit {
     }
 }
 
-impl<First, Other> Untuplable for Tuple<Tuple<First, Unit>, Other>
+impl<First, Other> Untuplable for Tuple<First, Other>
 where
+    First: TupleLike,
     Other: Untuplable,
 {
-    type UntupleOutput = Tuple<First, Other::UntupleOutput>;
+    type UntupleOutput = First::JoinOutput<Other::UntupleOutput>;
 
     fn untuple(self) -> Self::UntupleOutput {
-        Tuple(self.0 .0, Untuplable::untuple(self.1))
+        self.0.join(Untuplable::untuple(self.1))
     }
 }
 
