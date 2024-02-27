@@ -33,9 +33,9 @@
 //!
 //! * [Create tuples](tuple!) with any number of elements.
 //! * [Access elements](get!) in a tuple at any index, or by their types.
-//! * [Push element](TupleLike::push()) to a tuple or [pop element](Popable::pop()) from a tuple.
+//! * [Push element](TupleLike::push()) to a tuple or [pop element](TupleLike::pop()) from a tuple.
 //! * [Join](TupleLike::join()) two tuples or [split](split_at!) a tuple into two parts.
-//! * [Reverse](TupleLike::rev()), [left rotate](Rotatable::rot_l()), or [right rotate](Rotatable::rot_r()) a tuple.
+//! * [Reverse](TupleLike::rev()), [left rotate](TupleLike::rot_l()), or [right rotate](TupleLike::rot_r()) a tuple.
 //! * If all element types implement a `Trait` (e.g. `Eq`, `Add`), then the [`Tuple`] also implement that `Trait`.
 //! [See which traits are supported and learn how to implement your custom traits for `Tuple`](Tuple#trait-implementations-on-tuple).
 //! * [Traverse all elements](Tuple#traverse-tuples) of a tuple, or [fold](Tuple#fold-tuples) a tuple.
@@ -126,8 +126,6 @@ mod any_array;
 pub mod unwrap;
 
 pub use tuple::*;
-
-pub use search::Search;
 
 #[cfg(feature = "any_array")]
 pub use any_array::*;
@@ -261,7 +259,7 @@ pub use tuplez_macros::tuple_pat;
 
 /// Get the element at a specific index of the tuple.
 ///
-/// The [`get_ref()`](crate::search::Search::get_ref()) and [`get_mut()`](crate::Search::get_mut())
+/// The [`get_ref()`](TupleLike::get_ref()) and [`get_mut()`](TupleLike::get_mut())
 /// provide another way to get elements by their type.
 ///
 /// # Syntax
@@ -326,9 +324,10 @@ pub use tuplez_macros::get;
 /// Take the element at a specific index of the tuple and get the remainder.
 ///
 /// When the type of element is provided instead of its index, this macro expands to
-/// [`take()`](crate::Search::take()).
+/// [`take()`](TupleLike::take()).
 ///
-/// The [`Popable`] also provide methods to pop elements from the front or back of the tuple.
+/// The [`pop()`](TupleLike::pop()) and [`pop_front()`](TupleLike::pop_front()) methods
+/// also provide ways to pop elements from the front or back of the tuple.
 ///
 /// # Syntax
 ///

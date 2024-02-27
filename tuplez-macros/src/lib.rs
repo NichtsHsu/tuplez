@@ -83,7 +83,7 @@ pub fn take(input: TokenStream) -> TokenStream {
             tup,
             ext: IndexOrType::Type(ty),
         } => quote!({
-            use ::tuplez::Search;
+            use ::tuplez::TupleLike;
             let (element_, remainder_): (#ty, _) = (#tup).take();
             (element_, remainder_)
         }),

@@ -20,7 +20,7 @@ where
     }
 }
 
-/// The [`ToArray`] trait allows you to convert tuples to [primitive arrays](std::array),
+/// Convert tuples to [primitive arrays](std::array),
 /// if and only if all elements of the tuple are of the same type.
 ///
 /// *Warning*: You have enabled the `any_array` feature, which will allow to use the unstable features to implement

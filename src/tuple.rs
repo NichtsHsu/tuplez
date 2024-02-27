@@ -1,4 +1,6 @@
-use crate::{fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*};
+use crate::{
+    fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*, search::Search,
+};
 use std::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -172,7 +174,7 @@ pub struct Unit;
 /// [`Unit`]s are not [`Popable`], and all [`Tuple`]s are [`Popable`]:
 ///
 /// ```
-/// use tuplez::{Popable, tuple};
+/// use tuplez::{tuple, TupleLike};
 ///
 /// let tup = tuple!(1, "hello", 3.14, [1, 2, 3]);
 ///
@@ -467,14 +469,7 @@ pub struct Tuple<First, Other>(
 
 /// The [`TupleLike`] trait defines the basic methods of tuples.
 ///
-/// Notice that an [`Unit`] contains no elements and cannot be popped, so the pop methods is not required methods of a tuple.
-/// See the [`Popable`] trait about pop methods.
-///
-/// In fact, all tuples implement the rotation methods.
-/// However, since right rotation requires additional detection of whether the tuple can be popped,
-/// and cannot be introduced into [`TupleLike`] in a elegant way, so an extra trait [`Rotatable`] is used for them.
-///
-/// Another thing is, due to the limitation that Rust cannot represent
+/// NOTE: Due to the limitation that Rust does not support the variadic to represent
 /// [primitive tuple types]((https://doc.rust-lang.org/std/primitive.tuple.html)) containing any number of elements,
 /// we cannot make [`TupleLike`] trait contain a method that converts tuple to the primitive tuple type.
 /// Therefore, this method is provided by the trait [`ToPrimitive`] and is only implemented for tuples with no more than 32 elements.
@@ -542,6 +537,87 @@ pub trait TupleLike {
         Self::LEN == 0
     }
 
+    /// Take out the searched element, and get the remainder of tuple.
+    ///
+    /// Add a type annotation to the searched element to let [`take()`](TupleLike::take()) know which one you want.
+    ///
+    /// If you want to take out the element at a specific index, see [`take!`](crate::take!).
+    ///
+    /// If you want to take out the first or last element, see [`pop()`][TupleLike::pop()].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
+    /// let (value, remainder): (i32, _) = tup.take();      // Add type annotation for `value`
+    /// assert_eq!(value, 5);
+    /// assert_eq!(remainder, tuple!(3.14, "hello", [1, 2, 3]));
+    /// ```
+    ///
+    /// If you cannot add a type annotation, you can also use the [`take!`](crate::take!) macro:
+    ///
+    /// ```
+    /// use tuplez::{take, tuple};
+    ///
+    /// let tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
+    /// let (value, remainder) = take!(tup; i32);
+    /// assert_eq!(value, 5);
+    /// assert_eq!(remainder, tuple!(3.14, "hello", [1, 2, 3]));
+    /// ```
+    fn take<T, R>(self) -> (T, Self::TakeRemainder)
+    where
+        Self: Search<T, R> + Sized,
+    {
+        Search::take(self)
+    }
+
+    /// Get an immutable reference of the searched element.
+    ///
+    /// Add a type annotation to the searched element to let [`get_ref()`](TupleLike::get_ref()) know which one you want.
+    ///
+    /// If you want to get the element by its index, see [`get!`](crate::get!);
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
+    /// let arr: &[i32; 3] = tup.get_ref();
+    /// assert_eq!(arr, &[1, 2, 3]);
+    /// ```
+    fn get_ref<T, R>(&self) -> &T
+    where
+        Self: Search<T, R> + Sized,
+    {
+        Search::get_ref(self)
+    }
+
+    /// Get a mutable reference of the searched element.
+    ///
+    /// Add a type annotation to the searched element to let [`get_mut()`](TupleLike::get_mut()) know which one you want.
+    ///
+    /// If you want to get the element by its index, see [`get!`](crate::get!);
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
+    /// let s: &mut &str = tup.get_mut();
+    /// *s = "world";
+    /// assert_eq!(tup, tuple!(3.14, "world", 5, [1, 2, 3]));
+    /// ```
+    fn get_mut<T, R>(&mut self) -> &mut T
+    where
+        Self: Search<T, R> + Sized,
+    {
+        Search::get_mut(self)
+    }
+
     /// Generate a tuple containing immutable references to all elements of the tuple.
     ///
     /// # Example
@@ -598,6 +674,94 @@ pub trait TupleLike {
 
     /// Push an element to the back of the tuple. Same as [`push()`](TupleLike::push()).
     fn push_back<T>(self, value: T) -> Self::PushBackOutput<T>;
+
+    /// Pop an element from the back of the tuple.
+    ///
+    /// Note: The [`Unit`] type is not [`Popable`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, "hello", 3.14);
+    /// let (tup2, popped) = tup.pop();
+    /// assert_eq!(tup2, tuple!(1, "hello"));
+    /// assert_eq!(popped, 3.14);
+    /// ```
+    fn pop(self) -> (Self::PopBackOutput, Self::PopBackElement)
+    where
+        Self: Popable + Sized,
+    {
+        Popable::pop(self)
+    }
+
+    /// Pop an element from the front of the tuple.
+    ///
+    /// Note: The [`Unit`] type is not [`Popable`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, "hello", 3.14);
+    /// let (tup2, popped) = tup.pop_front();
+    /// assert_eq!(tup2, tuple!("hello", 3.14));
+    /// assert_eq!(popped, 1);
+    /// ```
+    fn pop_front(self) -> (Self::PopFrontOutput, Self::PopFrontElement)
+    where
+        Self: Popable + Sized,
+    {
+        Popable::pop_front(self)
+    }
+
+    /// Pop an element from the back of the tuple. Same as [`pop()`](TupleLike::pop()).
+    ///
+    /// Note: The [`Unit`] type is not [`Popable`].
+    fn pop_back(self) -> (Self::PopBackOutput, Self::PopBackElement)
+    where
+        Self: Popable + Sized,
+    {
+        Popable::pop_back(self)
+    }
+
+    /// Left rotates the elements of the tuple.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, "2", 3.0, 4);
+    /// let tup2 = tup.rot_l();
+    /// assert_eq!(tup2, tuple!("2", 3.0, 4, 1));
+    /// ```
+    fn rot_l(self) -> Self::RotLeftOutput
+    where
+        Self: Rotatable + Sized,
+    {
+        Rotatable::rot_l(self)
+    }
+
+    /// Right rotates the elements of the tuple.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, "2", 3.0, 4);
+    /// let tup2 = tup.rot_r();
+    /// assert_eq!(tup2, tuple!(4, 1, "2", 3.0));
+    /// ```
+    fn rot_r(self) -> Self::RotRightOutput
+    where
+        Self: Rotatable + Sized,
+    {
+        Rotatable::rot_r(self)
+    }
 
     /// Reverse elements of the tuple.
     ///
@@ -682,7 +846,7 @@ pub trait TupleLike {
     where
         Self: Foreach<F> + Sized,
     {
-        Foreach::<F>::foreach(self, f)
+        Foreach::foreach(self, f)
     }
 
     /// Fold the tuple.
@@ -712,7 +876,7 @@ pub trait TupleLike {
     where
         Self: Foldable<F, Acc> + Sized,
     {
-        Foldable::<F, Acc>::fold(self, f, acc)
+        Foldable::fold(self, f, acc)
     }
 
     /// Performs dot product operation.
@@ -729,16 +893,16 @@ pub trait TupleLike {
     where
         Self: Dot<T> + Sized,
     {
-        Dot::<T>::dot(self, rhs)
+        Dot::dot(self, rhs)
     }
 
     /// Zip two tuples.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use tuplez::{tuple, TupleLike};
-    /// 
+    ///
     /// let tup = tuple!(1, 2.0, "3").zip(tuple!("4", 5, 6.0));
     /// assert_eq!(tup, tuple!(tuple!(1, "4"), tuple!(2.0, 5), tuple!("3", 6.0)));
     /// ```
@@ -746,16 +910,16 @@ pub trait TupleLike {
     where
         Self: Zippable<T> + Sized,
     {
-        Zippable::<T>::zip(self, rhs)
+        Zippable::zip(self, rhs)
     }
 
     /// Zip two tuples, but output elements are primitive tuples.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use tuplez::{tuple, TupleLike};
-    /// 
+    ///
     /// let tup = tuple!(1, 2.0, "3").zip2(tuple!("4", 5, 6.0));
     /// assert_eq!(tup, tuple!((1, "4"), (2.0, 5), ("3", 6.0)));
     /// ```
@@ -763,7 +927,7 @@ pub trait TupleLike {
     where
         Self: Zippable<T> + Sized,
     {
-        Zippable::<T>::zip2(self, rhs)
+        Zippable::zip2(self, rhs)
     }
 }
 
@@ -874,170 +1038,7 @@ where
     }
 }
 
-/// The [`Popable`] trait allows popping elements from the front and back of the tuple.
-///
-/// The [`Unit`] type is not [`Popable`]. All [`Tuple`]s are [`Popable`].
-///
-/// The [`take!`](crate::take!) macro provides another way to take out elements by their indexes or types.
-pub trait Popable {
-    /// The type of tuple generated by popping an element from the front of the tuple.
-    type PopFrontOutput: TupleLike;
-
-    /// The type of the element popped from the front of the tuple.
-    type PopFrontElemet;
-
-    /// The type of tuple generated by popping an element from the back of the tuple.
-    type PopBackOutput: TupleLike;
-
-    /// The type of the element popped from the back of the tuple.
-    type PopBackElement;
-
-    /// Pop an element from the back of the tuple.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use tuplez::{Popable, tuple};
-    ///
-    /// let tup = tuple!(1, "hello", 3.14);
-    /// let (tup2, popped) = tup.pop();
-    /// assert_eq!(tup2, tuple!(1, "hello"));
-    /// assert_eq!(popped, 3.14);
-    /// ```
-    fn pop(self) -> (Self::PopBackOutput, Self::PopBackElement);
-
-    /// Pop an element from the front of the tuple.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use tuplez::{Popable, tuple};
-    ///
-    /// let tup = tuple!(1, "hello", 3.14);
-    /// let (tup2, popped) = tup.pop_front();
-    /// assert_eq!(tup2, tuple!("hello", 3.14));
-    /// assert_eq!(popped, 1);
-    /// ```
-    fn pop_front(self) -> (Self::PopFrontOutput, Self::PopFrontElemet);
-
-    /// Pop an element from the back of the tuple. Same as [`pop()`](Popable::pop()).
-    fn pop_back(self) -> (Self::PopBackOutput, Self::PopBackElement);
-}
-
-impl<First, Other> Popable for Tuple<First, Other>
-where
-    Other: Popable + TupleLike,
-{
-    type PopFrontOutput = Other;
-    type PopFrontElemet = First;
-    type PopBackOutput = Tuple<First, Other::PopBackOutput>;
-    type PopBackElement = Other::PopBackElement;
-
-    fn pop(self) -> (Self::PopBackOutput, Self::PopBackElement) {
-        let (tup, elem) = self.1.pop();
-        (Tuple(self.0, tup), elem)
-    }
-
-    fn pop_front(self) -> (Self::PopFrontOutput, Self::PopFrontElemet) {
-        (self.1, self.0)
-    }
-
-    fn pop_back(self) -> (Self::PopBackOutput, Self::PopBackElement) {
-        self.pop()
-    }
-}
-
-impl<First> Popable for Tuple<First, Unit> {
-    type PopFrontOutput = Unit;
-    type PopFrontElemet = First;
-    type PopBackOutput = Unit;
-    type PopBackElement = First;
-    fn pop(self) -> (Self::PopBackOutput, Self::PopBackElement) {
-        (Unit, self.0)
-    }
-
-    fn pop_front(self) -> (Self::PopFrontOutput, Self::PopFrontElemet) {
-        (Unit, self.0)
-    }
-
-    fn pop_back(self) -> (Self::PopBackOutput, Self::PopBackElement) {
-        self.pop()
-    }
-}
-
-/// The [`Rotatable`] trait allows you to rotate the elements of the tuple.
-///
-/// In fact, all tuples implement [`Rotatable`], including [`Unit`].
-/// However, implementing right rotation for [`Tuple`]s relies on [`pop()`](Popable::pop()),
-/// so this trait cannot be incorporated into [`TupleLike`] elegantly.
-pub trait Rotatable {
-    /// The type of tuple generated by left rorating the elements of the tuple.
-    type RotLeftOutput: TupleLike;
-
-    /// The type of tuple generated by right rotating the elements of the tuple.
-    type RotRightOutput: TupleLike;
-
-    /// Left rotates the elements of the tuple.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use tuplez::{Rotatable, tuple};
-    ///
-    /// let tup = tuple!(1, "2", 3.0, 4);
-    /// let tup2 = tup.rot_l();
-    /// assert_eq!(tup2, tuple!("2", 3.0, 4, 1));
-    /// ```
-    fn rot_l(self) -> Self::RotLeftOutput;
-
-    /// Right rotates the elements of the tuple.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use tuplez::{Rotatable, tuple};
-    ///
-    /// let tup = tuple!(1, "2", 3.0, 4);
-    /// let tup2 = tup.rot_r();
-    /// assert_eq!(tup2, tuple!(4, 1, "2", 3.0));
-    /// ```
-    fn rot_r(self) -> Self::RotRightOutput;
-}
-
-impl Rotatable for Unit {
-    type RotLeftOutput = Unit;
-    type RotRightOutput = Unit;
-
-    fn rot_l(self) -> Unit {
-        self
-    }
-
-    fn rot_r(self) -> Unit {
-        self
-    }
-}
-
-impl<First, Other> Rotatable for Tuple<First, Other>
-where
-    Other: TupleLike,
-    Self: Popable,
-{
-    type RotLeftOutput = Other::PushBackOutput<First>;
-    type RotRightOutput =
-        Tuple<<Self as Popable>::PopBackElement, <Self as Popable>::PopBackOutput>;
-
-    fn rot_l(self) -> Self::RotLeftOutput {
-        let Tuple(first, other) = self;
-        other.push(first)
-    }
-
-    fn rot_r(self) -> Self::RotRightOutput {
-        let (out, elem) = self.pop();
-        Tuple(elem, out)
-    }
-}
-
-/// The [`ToPrimitive`] trait allows you to convert tuplez's tuples to [primitive tuples](https://doc.rust-lang.org/std/primitive.tuple.html).
+/// Convert tuples to [primitive tuples](https://doc.rust-lang.org/std/primitive.tuple.html).
 ///
 /// Note that due to the limitation that Rust cannot represent primitive tuple types containing any number of elements,
 /// the trait [`ToPrimitive`] is only implemented for tuples with no more than 32 elements.
@@ -1059,8 +1060,7 @@ pub trait ToPrimitive {
     fn primitive(self) -> Self::Primitive;
 }
 
-/// The [`ToArray`] trait allows you to convert tuples to [primitive arrays](std::array),
-/// if and only if all elements of the tuple are of the same type.
+/// Convert tuples to [primitive arrays](std::array), if all elements of the tuple are of the same type.
 ///
 /// Because the [generic constant expressions](https://github.com/rust-lang/rust/issues/76560) feature is still unstable yet,
 /// we can only limit the maximum number of elements of the tuple that implement [`ToArray`] to 32,
