@@ -146,6 +146,13 @@ impl UnwrapOrDefault for Unit {
     }
 }
 
+impl Unit {
+    /// Always be `Some(tuple!())`.
+    pub fn try_unwrap(self) -> Option<Self> {
+        Some(self)
+    }
+}
+
 impl<First, Other> Tuple<First, Other>
 where
     Other: TupleLike + Unwrap,

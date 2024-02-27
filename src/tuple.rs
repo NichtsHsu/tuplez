@@ -504,6 +504,9 @@ pub trait TupleLike {
     /// The type of tuple after wrapping all elements into [`Result`](std::result::Result).
     type ToOkOutput<E>: TupleLike;
 
+    /// The type of tuple after wrapping all elements into [`Tuple`].
+    type ToTupleOutput: TupleLike;
+
     /// The number of elements in the tuple.
     const LEN: usize;
 
@@ -794,6 +797,10 @@ pub trait TupleLike {
 
     /// Convert a `tuple!(a, b, c ...)` to `tuple!(Some(a), Some(b), Some(c) ...)`.
     ///
+    /// See [`unwrap()`](crate::unwrap::Unwrap::unwrap()),
+    /// [`unwrap_or_default()`](crate::unwrap::UnwrapOrDefault::unwrap_or_default())
+    /// or [`try_unwrap()`](crate::Tuple::try_unwrap()) for the opposite operation.
+    ///
     /// # Example
     ///
     /// ```
@@ -808,6 +815,10 @@ pub trait TupleLike {
     ///
     /// Note: You need to provide the error type.
     ///
+    /// See [`unwrap()`](crate::unwrap::Unwrap::unwrap()),
+    /// [`unwrap_or_default()`](crate::unwrap::UnwrapOrDefault::unwrap_or_default())
+    /// or [`try_unwrap()`](crate::Tuple::try_unwrap()) for the opposite operation.
+    ///
     /// # Example
     ///
     /// ```
@@ -818,8 +829,38 @@ pub trait TupleLike {
     /// ```
     fn to_ok<E>(self) -> Self::ToOkOutput<E>;
 
-    /// tuple!(a, b, c).to_tuple_tuple() => tuple!(tuple!(a), tuple!(b), tuple!(c))
-    fn to_tuple_tuple(self) -> Self::ToTupleOutput;
+    /// Convert a `tuple!(a, b, c ...)` to `tuple!(tuple!(a), tuple!(b), tuple!(c) ...)`.
+    ///
+    /// See [`untuple()`](TupleLike::untuple()) for the opposite operation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, "hello", 3.14);
+    /// assert_eq!(tup.to_tuple(), tuple!(tuple!(1), tuple!("hello"), tuple!(3.14)));
+    /// ```
+    fn to_tuple(self) -> Self::ToTupleOutput;
+
+    /// Untuple a tuple, whose elements are all tuples with only one element.
+    ///
+    /// See [`to_tuple()`](TupleLike::to_tuple()) for the opposite operation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup_tup = tuple!(tuple!(1), tuple!("hello"), tuple!(3.14));
+    /// assert_eq!(tup_tup.untuple(), tuple!(1, "hello", 3.14));
+    /// ```
+    fn untuple(self) -> Self::UntupleOutput
+    where
+        Self: Untuplable + Sized,
+    {
+        Untuplable::untuple(self)
+    }
 
     /// Traverse the tuple, and collect the output of traversal into a new tuple.
     ///
@@ -901,6 +942,8 @@ pub trait TupleLike {
 
     /// Zip two tuples.
     ///
+    /// See [`unzip()`](TupleLike::unzip()) for the opposite operation.
+    ///
     /// # Example
     ///
     /// ```
@@ -909,7 +952,7 @@ pub trait TupleLike {
     /// let tup = tuple!(1, 2.0, "3").zip(tuple!("4", 5, 6.0));
     /// assert_eq!(tup, tuple!(tuple!(1, "4"), tuple!(2.0, 5), tuple!("3", 6.0)));
     /// ```
-    fn zip<T>(self, rhs: T) -> <Self as Zippable<T>>::Output
+    fn zip<T>(self, rhs: T) -> Self::ZipOutput
     where
         Self: Zippable<T> + Sized,
     {
@@ -917,6 +960,8 @@ pub trait TupleLike {
     }
 
     /// Zip two tuples, but output elements are primitive tuples.
+    ///
+    /// See [`unzip()`](TupleLike::unzip()) for the opposite operation.
     ///
     /// # Example
     ///
@@ -926,11 +971,162 @@ pub trait TupleLike {
     /// let tup = tuple!(1, 2.0, "3").zip2(tuple!("4", 5, 6.0));
     /// assert_eq!(tup, tuple!((1, "4"), (2.0, 5), ("3", 6.0)));
     /// ```
-    fn zip2<T>(self, rhs: T) -> <Self as Zippable<T>>::Output2
+    fn zip2<T>(self, rhs: T) -> Self::ZipOutput2
     where
         Self: Zippable<T> + Sized,
     {
         Zippable::zip2(self, rhs)
+    }
+
+    /// Unzip a tuple to two tuples, if all elements of the tuple are tuples with two elements.
+    /// Elements can be of [`Tuple`] type or primitive tuple type.
+    ///
+    /// See [`zip()`](TupleLike::zip()) and [`zip2()`](TupleLike::zip2()) for the opposite operation.
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(
+    ///     tuple!(1, "hello"), // A `Tuple`
+    ///     ("world", 2.0),     // A primitive tuple
+    /// );
+    /// let (l, r) = tup.unzip();
+    /// assert_eq!(l, tuple!(1, "world"));
+    /// assert_eq!(r, tuple!("hello", 2.0));
+    /// ```
+    fn unzip(self) -> (Self::UnzipOutputLeft, Self::UnzipOutputRight)
+    where
+        Self: Unzippable + Sized,
+    {
+        Unzippable::unzip(self)
+    }
+
+    /// If the elements of a tuple are all tuples, push an element to the back of each tuple element.
+    ///
+    /// See [`shrink()`](TupleLike::shrink()) for the opposite operation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(tuple!(1, "hello"), tuple!(), tuple!(3.14));
+    /// let ext = tuple!(9.0, "8", 7);
+    /// assert_eq!(
+    ///     tup.extend(ext),
+    ///     tuple!(tuple!(1, "hello", 9.0), tuple!("8"), tuple!(3.14, 7))
+    /// );
+    /// ```
+    fn extend<T>(self, rhs: T) -> Self::ExtendBackOutput
+    where
+        Self: Extendable<T> + Sized,
+    {
+        Extendable::extend(self, rhs)
+    }
+
+    /// If the elements of a tuple are all tuples, push an element to the front of each tuple element.
+    ///
+    /// See [`shrink_front()`](TupleLike::shrink_front()) for the opposite operation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(tuple!(1, "hello"), tuple!(), tuple!(3.14));
+    /// let ext = tuple!(9.0, "8", 7);
+    /// assert_eq!(
+    ///     tup.extend_front(ext),
+    ///     tuple!(tuple!(9.0, 1, "hello"), tuple!("8"), tuple!(7, 3.14))
+    /// );
+    /// ```
+    fn extend_front<T>(self, rhs: T) -> Self::ExtendFrontOutput
+    where
+        Self: Extendable<T> + Sized,
+    {
+        Extendable::extend_front(self, rhs)
+    }
+
+    /// If the elements of a tuple are all tuples, push an element to the front of each tuple element.
+    /// Same as [`extend()`](TupleLike::extend()).
+    fn extend_back<T>(self, rhs: T) -> Self::ExtendBackOutput
+    where
+        Self: Extendable<T> + Sized,
+    {
+        Extendable::extend_back(self, rhs)
+    }
+
+    /// If the elements of a tuple are all tuples, pop an element from the back of each tuple element.
+    ///
+    /// See [`extend()`](TupleLike::extend()) for the opposite operation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(tuple!(9.0, 1, "hello"), tuple!("8"), tuple!(7, 3.14));
+    /// let (result, popped) = tup.shrink();
+    /// assert_eq!(result, tuple!(tuple!(9.0, 1), tuple!(), tuple!(7)));
+    /// assert_eq!(popped, tuple!("hello", "8", 3.14));
+    /// ```
+    fn shrink(self) -> (Self::ShrinkBackOutput, Self::ShrinkBackElements)
+    where
+        Self: Shrinkable + Sized,
+    {
+        Shrinkable::shrink(self)
+    }
+
+    /// If the elements of a tuple are all tuples, pop an element from the front of each tuple element.
+    ///
+    /// See [`extend_front()`](TupleLike::extend_front()) for the opposite operation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(tuple!(9.0, 1, "hello"), tuple!("8"), tuple!(7, 3.14));
+    /// let (result, popped) = tup.shrink_front();
+    /// assert_eq!(result, tuple!(tuple!(1, "hello"), tuple!(), tuple!(3.14)));
+    /// assert_eq!(popped, tuple!(9.0, "8", 7));
+    /// ```
+    fn shrink_front(self) -> (Self::ShrinkFrontOutput, Self::ShrinkFrontElements)
+    where
+        Self: Shrinkable + Sized,
+    {
+        Shrinkable::shrink_front(self)
+    }
+
+    /// If the elements of a tuple are all tuples, pop an element from the back of each tuple element.
+    /// Same as [`shrink()`](TupleLike::shrink()).
+    fn shrink_back(self) -> (Self::ShrinkBackOutput, Self::ShrinkBackElements)
+    where
+        Self: Shrinkable + Sized,
+    {
+        Shrinkable::shrink_back(self)
+    }
+
+    /// If two tuples have the same number of elements, and their elements are both tuples,
+    /// join their tuple elements one-to-one.
+    ///
+    /// NOTE: This method is not [`join()`](TupleLike::join()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(tuple!(1), tuple!(), tuple!("hello", 3.14));
+    /// let tup2 = tuple!(tuple!(), tuple!(9, "8"), tuple!(7.0));
+    /// let tup3 = tup.combine(tup2);
+    /// assert_eq!(tup3, tuple!(tuple!(1), tuple!(9, "8"), tuple!("hello", 3.14, 7.0)));
+    /// ```
+    fn combine<T>(self, rhs: T) -> Self::CombineOutput
+    where
+        Self: Combinable<T> + Sized,
+    {
+        Combinable::combine(self, rhs)
     }
 }
 
@@ -943,6 +1139,7 @@ impl TupleLike for Unit {
     type JoinOutput<T> = T where T: TupleLike;
     type ToSomeOutput = Unit;
     type ToOkOutput<E> = Unit;
+    type ToTupleOutput = Unit;
 
     const LEN: usize = 0;
 
@@ -978,11 +1175,15 @@ impl TupleLike for Unit {
     }
 
     fn to_some(self) -> Self::ToSomeOutput {
-        Self
+        self
     }
 
     fn to_ok<E>(self) -> Self::ToOkOutput<E> {
-        Self
+        self
+    }
+
+    fn to_tuple(self) -> Self::ToTupleOutput {
+        self
     }
 }
 
@@ -998,6 +1199,7 @@ where
     type JoinOutput<T> = Tuple<First, Other::JoinOutput<T>> where T: TupleLike;
     type ToSomeOutput = Tuple<Option<First>, Other::ToSomeOutput>;
     type ToOkOutput<E> = Tuple<Result<First, E>, Other::ToOkOutput<E>>;
+    type ToTupleOutput = Tuple<Tuple<First, Unit>, Other::ToTupleOutput>;
 
     const LEN: usize = Other::LEN + 1;
 
@@ -1038,6 +1240,10 @@ where
 
     fn to_ok<E>(self) -> Self::ToOkOutput<E> {
         Tuple(Ok(self.0), self.1.to_ok())
+    }
+
+    fn to_tuple(self) -> Self::ToTupleOutput {
+        Tuple(Tuple(self.0, Unit), self.1.to_tuple())
     }
 }
 

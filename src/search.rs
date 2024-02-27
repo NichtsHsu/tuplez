@@ -79,7 +79,7 @@ pub trait Search<T, Result>: TupleLike {
     ///
     /// Hint: The [`TupleLike`] trait provides the [`get_mut()`](TupleLike::get_mut()) method as the wrapper
     /// for this [`get_mut()`](Search::get_mut()) method.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -114,7 +114,7 @@ where
 
 impl<First, Other, T, Result> Search<T, Searching<Result>> for Tuple<First, Other>
 where
-    Other: TupleLike + Search<T, Result>,
+    Other: Search<T, Result>,
 {
     type TakeRemainder = Tuple<First, Other::TakeRemainder>;
 

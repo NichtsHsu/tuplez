@@ -35,7 +35,7 @@
 //! * [Access elements](get!) in a tuple at any index, or by their types.
 //! * [Push element](TupleLike::push()) to a tuple or [pop element](TupleLike::pop()) from a tuple.
 //! * [Join](TupleLike::join()) two tuples or [split](split_at!) a tuple into two parts.
-//! * [Reverse](TupleLike::rev()), [left rotate](TupleLike::rot_l()), or [right rotate](TupleLike::rot_r()) a tuple.
+//! * [Rich tuple operations](TupleLike), e.g.: [reverse](TupleLike::rev()), [left rotate](TupleLike::rot_l()), [zip](TupleLike::zip()).
 //! * If all element types implement a `Trait` (e.g. `Eq`, `Add`), then the [`Tuple`] also implement that `Trait`.
 //! [See which traits are supported and learn how to implement your custom traits for `Tuple`](Tuple#trait-implementations-on-tuple).
 //! * [Traverse all elements](Tuple#traverse-tuples) of a tuple, or [fold](Tuple#fold-tuples) a tuple.
@@ -591,3 +591,6 @@ pub use tuplez_macros::folder;
 /// assert_eq!(result, 15);
 /// ```
 pub use tuplez_macros::seq_folder;
+
+#[test]
+fn test() {}

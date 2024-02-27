@@ -31,7 +31,7 @@ the primitive tuples.
 * Access elements in a tuple at any index, or by their types.
 * Push element to a tuple or pop element from a tuple.
 * Join two tuples or split a tuple into two parts.
-* Reverse, left rotate, or right rotate a tuple.
+* Rich tuple operations, e.g.: reverse, left rotate, zip.
 * If all element types implement a `Trait` (e.g. `Eq`, `Add`), then the `Tuple` also implement that `Trait`.
 * Traverse all elements of a tuple, or fold a tuple.
 * When the number of elements of a tuple doesn't exceed 32, then it can be converted from/to a primitive tuple or a primitive array.

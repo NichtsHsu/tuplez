@@ -133,7 +133,7 @@ impl<F> Foreach<F> for Unit {
 impl<F, First, Other> Foreach<F> for Tuple<First, Other>
 where
     F: Mapper<First>,
-    Other: Foreach<F> + TupleLike,
+    Other: Foreach<F>,
 {
     type Output = Tuple<<F as Mapper<First>>::Output, <Other as Foreach<F>>::Output>;
     fn foreach(self, f: &mut F) -> Self::Output {
