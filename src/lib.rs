@@ -591,6 +591,3 @@ pub use tuplez_macros::folder;
 /// assert_eq!(result, 15);
 /// ```
 pub use tuplez_macros::seq_folder;
-
-#[test]
-fn test() {}

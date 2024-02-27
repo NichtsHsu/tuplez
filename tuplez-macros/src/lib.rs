@@ -139,6 +139,7 @@ pub fn mapper(input: TokenStream) -> TokenStream {
     quote!(
         {
             use ::tuplez::foreach::Mapper;
+            #[derive(Copy, Clone, Debug)]
             struct __Mapper;
             #(#rules)*
             &mut __Mapper
@@ -180,6 +181,7 @@ pub fn folder(input: TokenStream) -> TokenStream {
     quote!(
         {
             use ::tuplez::fold::Folder;
+            #[derive(Copy, Clone, Debug)]
             struct __Folder;
             #(#rules)*
             __Folder
