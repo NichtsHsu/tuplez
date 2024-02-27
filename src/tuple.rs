@@ -649,6 +649,62 @@ pub trait TupleLike {
     /// ```
     fn as_mut(&mut self) -> Self::AsMutOutput<'_>;
 
+    /// If the elements of the tuple are all references, clone its elements to a new tuple.
+    ///
+    /// # Example:
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut string = String::from("hello");
+    /// let tup = tuple!(&1, &mut string, &3.14);
+    /// assert_eq!(tup.cloned(), tuple!(1, String::from("hello"), 3.14));
+    /// ```
+    fn cloned(&self) -> Self::ClonedOutput
+    where
+        Self: Cloned,
+    {
+        Cloned::cloned(self)
+    }
+
+    /// If the elements of the tuple are all references, copy its elements to a new tuple.
+    ///
+    /// # Example:
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut ch = 'c';
+    /// let tup = tuple!(&1, &mut ch, &3.14);
+    /// assert_eq!(tup.copied(), tuple!(1, 'c', 3.14));
+    /// ```
+    fn copied(&self) -> Self::CopiedOutput
+    where
+        Self: Copied,
+    {
+        Copied::copied(self)
+    }
+
+    /// If the elements of the tuple are all references, clone its elements to a new tuple.
+    ///
+    /// Much like [`cloned()`](TupleLike::cloned()), but can work on types like `&str` or slices.
+    /// 
+    /// # Example:
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut arr = [1, 2, 3];
+    /// let tup = tuple!(&1, &mut arr as &mut [i32], "hello");
+    /// assert_eq!(tup.owned(), tuple!(1, vec![1, 2, 3], "hello".to_string()));
+    /// ```
+    fn owned(&self) -> Self::OwnedOutput
+    where
+        Self: Owned,
+    {
+        Owned::owned(self)
+    }
+
     /// Push an element to the back of the tuple.
     ///
     /// # Examples
