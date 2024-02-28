@@ -2,7 +2,7 @@
 //!
 //! Check the documentation page of [`Search`] for details.
 
-use crate::{Tuple, TupleLike};
+use crate::{Tuple, TupleLenEqTo, TupleLike, Unit};
 
 /// Helper class for [`Search`], indicates that the current element is the one searched for.
 pub struct Searched;
@@ -129,5 +129,152 @@ where
 
     fn get_mut(&mut self) -> &mut T {
         Search::get_mut(&mut self.1)
+    }
+}
+
+/// replace tail elements of the tuple.
+pub trait TailReplacable<T, Result>: TupleLike {
+    /// The type of the tuple after replacing its elements.
+    type ReplaceOutput: TupleLike;
+
+    /// The type of the tuple that collect all replaced elements.
+    type Replaced: TupleLike;
+
+    /// Replace the last N elements of the tuple with all elements of another tuple of N elements.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`replace_tail()`](TupleLike::replace_tail()) method as the wrapper
+    /// for this [`replace_tail()`](TailReplacable::replace_tail()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, "2", 3.0, Some(4));
+    /// let tup2 = tuple!("z", 8);
+    /// let (output, replaced) = tup.replace_tail(tup2);
+    /// assert_eq!(output, tuple!(1, "2", "z", 8));
+    /// assert_eq!(replaced, tuple!(3.0, Some(4)));
+    /// ```
+    fn replace_tail(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced);
+}
+
+impl<T, U> TailReplacable<T, Searched> for U
+where
+    T: TupleLenEqTo<U>,
+    U: TupleLike,
+{
+    type ReplaceOutput = T;
+    type Replaced = U;
+
+    fn replace_tail(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced) {
+        (rhs, self)
+    }
+}
+
+impl<First, Other, T, Result> TailReplacable<T, Searching<Result>> for Tuple<First, Other>
+where
+    Other: TailReplacable<T, Result>,
+{
+    type ReplaceOutput = Tuple<First, Other::ReplaceOutput>;
+    type Replaced = Other::Replaced;
+
+    fn replace_tail(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced) {
+        let (output, replaced) = TailReplacable::replace_tail(self.1, rhs);
+        (Tuple(self.0, output), replaced)
+    }
+}
+
+pub trait ReplaceWith<T, Result>: TupleLike {
+    /// Replace a sequence of elements in the tuple with all elements of another tuple.
+    ///
+    /// The tuple will search for a sequence of elements whose types are exactly the same as
+    /// the sequence of all the elements of the provided tuple, and then replace the elements
+    /// of this sequence with the elements of the provided tuple.
+    ///
+    /// This means that this method does not change the type of the tuple, which is why this
+    /// method requires `&mut self` instead of `self`.
+    ///
+    /// Finally, it returns the sequence of the replaced elements.
+    ///
+    /// NOTE: If you don't want to consume the input tuple,
+    /// then what you are looking for might be [`swap_with()`](ReplaceWith::swap_with()).
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`replace_with()`](TupleLike::replace_with()) method as the wrapper
+    /// for this [`replace_with()`](ReplaceWith::replace_with()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(1, Some("hello"), 2, 3.14, 3);
+    /// let replaced = tup.replace_with(tuple!(4, 9.8));
+    /// assert_eq!(tup, tuple!(1, Some("hello"), 4, 9.8, 3));
+    /// assert_eq!(replaced, tuple!(2, 3.14));
+    /// ```
+    fn replace_with(&mut self, rhs: T) -> T;
+
+    /// Swap a sequence of elements in the tuple with all elements of another tuple.
+    ///
+    /// The tuple will search for a sequence of elements whose types are exactly the same as
+    /// the sequence of all the elements of the provided tuple, and then swaps the elements
+    /// of this sequence with the elements of the provided tuple.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`swap_with()`](TupleLike::swap_with()) method as the wrapper
+    /// for this [`swap_with()`](ReplaceWith::swap_with()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(1, Some("hello"), 2, 3.14, 3);
+    /// let mut tup2 = tuple!(4, 9.8);
+    /// tup.swap_with(&mut tup2);
+    /// assert_eq!(tup, tuple!(1, Some("hello"), 4, 9.8, 3));
+    /// assert_eq!(tup2, tuple!(2, 3.14));
+    /// ```
+    fn swap_with(&mut self, rhs: &mut T);
+}
+
+impl<First, Other> ReplaceWith<Unit, Searched> for Tuple<First, Other>
+where
+    Other: TupleLike,
+{
+    fn replace_with(&mut self, rhs: Unit) -> Unit {
+        rhs
+    }
+
+    fn swap_with(&mut self, _: &mut Unit) {}
+}
+
+impl<First, Other1, Other2> ReplaceWith<Tuple<First, Other2>, Searched> for Tuple<First, Other1>
+where
+    Other1: ReplaceWith<Other2, Searched>,
+    Other2: TupleLike,
+{
+    fn replace_with(&mut self, rhs: Tuple<First, Other2>) -> Tuple<First, Other2> {
+        let elem = std::mem::replace(&mut self.0, rhs.0);
+        let replaced = ReplaceWith::replace_with(&mut self.1, rhs.1);
+        Tuple(elem, replaced)
+    }
+
+    fn swap_with(&mut self, rhs: &mut Tuple<First, Other2>) {
+        std::mem::swap(&mut self.0, &mut rhs.0);
+        ReplaceWith::swap_with(&mut self.1, &mut rhs.1);
+    }
+}
+
+impl<First, Other, T, Result> ReplaceWith<T, Searching<Result>> for Tuple<First, Other>
+where
+    Other: ReplaceWith<T, Result>,
+{
+    fn replace_with(&mut self, rhs: T) -> T {
+        ReplaceWith::replace_with(&mut self.1, rhs)
+    }
+
+    fn swap_with(&mut self, rhs: &mut T) {
+        ReplaceWith::swap_with(&mut self.1, rhs)
     }
 }

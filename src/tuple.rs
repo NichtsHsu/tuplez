@@ -1,8 +1,6 @@
 #[cfg(feature = "unwrap")]
 use crate::unwrap::*;
-use crate::{
-    fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*, search::Search,
-};
+use crate::{fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*, search::*};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::ops::{
@@ -1230,6 +1228,101 @@ pub trait TupleLike {
         Combinable::combine(self, rhs)
     }
 
+    /// Replace the first N elements of the tuple with all elements of another tuple of N elements.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, "2", 3.0, Some(4));
+    /// let tup2 = tuple!("z", 8);
+    /// let (output, replaced) = tup.replace_head(tup2);
+    /// assert_eq!(output, tuple!("z", 8, 3.0, Some(4)));
+    /// assert_eq!(replaced, tuple!(1, "2"));
+    /// ```
+    fn replace_head<T>(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced)
+    where
+        Self: HeadReplacable<T> + Sized,
+    {
+        HeadReplacable::replace_head(self, rhs)
+    }
+
+    /// Replace the last N elements of the tuple with all elements of another tuple of N elements.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, "2", 3.0, Some(4));
+    /// let tup2 = tuple!("z", 8);
+    /// let (output, replaced) = tup.replace_tail(tup2);
+    /// assert_eq!(output, tuple!(1, "2", "z", 8));
+    /// assert_eq!(replaced, tuple!(3.0, Some(4)));
+    /// ```
+    fn replace_tail<T, R>(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced)
+    where
+        Self: TailReplacable<T, R> + Sized,
+    {
+        TailReplacable::replace_tail(self, rhs)
+    }
+
+    /// Replace a sequence of elements in the tuple with all elements of another tuple.
+    ///
+    /// The tuple will search for a sequence of elements whose types are exactly the same as
+    /// the sequence of all the elements of the provided tuple, and then replace the elements
+    /// of this sequence with the elements of the provided tuple.
+    ///
+    /// This means that this method does not change the type of the tuple, which is why this
+    /// method requires `&mut self` instead of `self`.
+    ///
+    /// Finally, it returns the sequence of the replaced elements.
+    ///
+    /// NOTE: If you don't want to consume the input tuple,
+    /// then what you are looking for might be [`swap_with()`](TupleLike::swap_with()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(1, Some("hello"), 2, 3.14, 3);
+    /// let replaced = tup.replace_with(tuple!(4, 9.8));
+    /// assert_eq!(tup, tuple!(1, Some("hello"), 4, 9.8, 3));
+    /// assert_eq!(replaced, tuple!(2, 3.14));
+    /// ```
+    fn replace_with<T, R>(&mut self, rhs: T) -> T
+    where
+        Self: ReplaceWith<T, R>,
+    {
+        ReplaceWith::replace_with(self, rhs)
+    }
+
+    /// Swap a sequence of elements in the tuple with all elements of another tuple.
+    ///
+    /// The tuple will search for a sequence of elements whose types are exactly the same as
+    /// the sequence of all the elements of the provided tuple, and then swaps the elements
+    /// of this sequence with the elements of the provided tuple.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(1, Some("hello"), 2, 3.14, 3);
+    /// let mut tup2 = tuple!(4, 9.8);
+    /// tup.swap_with(&mut tup2);
+    /// assert_eq!(tup, tuple!(1, Some("hello"), 4, 9.8, 3));
+    /// assert_eq!(tup2, tuple!(2, 3.14));
+    /// ```
+    fn swap_with<T, R>(&mut self, rhs: &mut T)
+    where
+        Self: ReplaceWith<T, R>,
+    {
+        ReplaceWith::swap_with(self, rhs)
+    }
+
     /// Get the contained value.
     ///
     /// Only available if the `unwrap` feature is enabled (enabled by default).
@@ -1442,6 +1535,34 @@ where
     fn to_tuple(self) -> Self::ToTupleOutput {
         Tuple(Tuple(self.0, Unit), self.1.to_tuple())
     }
+}
+
+/// A Marker trait to indicate that two tuple types have the same number of elements.
+///
+/// **FIXME**: Once the [`generic_const_exprs` feature](https://github.com/rust-lang/rust/issues/76560)
+/// and the [`associated_const_equality` feature](https://github.com/rust-lang/rust/issues/92827) are
+/// stabilized, this trait is no longer needed. Instead, we can write:
+///
+/// ```ignore
+/// use tuplez::TupleLike;
+///
+/// fn use_tuple<T, U>(t: T, u: U)
+/// where
+///     T: TupleLike,
+///     U: TupleLike<LEN = { T::LEN }>,
+/// {
+///     // ...
+/// }
+/// ```
+pub trait TupleLenEqTo<T: TupleLike>: TupleLike {}
+
+impl TupleLenEqTo<Unit> for Unit {}
+
+impl<First1, Other1, First2, Other2> TupleLenEqTo<Tuple<First2, Other2>> for Tuple<First1, Other1>
+where
+    Other1: TupleLenEqTo<Other2>,
+    Other2: TupleLike,
+{
 }
 
 /// Convert tuples to [primitive tuples](https://doc.rust-lang.org/std/primitive.tuple.html).

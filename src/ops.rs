@@ -776,3 +776,53 @@ where
         Tuple(self.0.join(rhs.0), Combinable::combine(self.1, rhs.1))
     }
 }
+
+/// replace head elements of the tuple.
+pub trait HeadReplacable<T>: TupleLike {
+    /// The type of the tuple after replacing its elements.
+    type ReplaceOutput: TupleLike;
+
+    /// The type of the tuple that collect all replaced elements.
+    type Replaced: TupleLike;
+
+    /// Replace the first N elements of the tuple with all elements of another tuple of N elements.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`replace_head()`](TupleLike::replace_head()) method as the wrapper
+    /// for this [`replace_head()`](HeadReplacable::replace_head()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, "2", 3.0, Some(4));
+    /// let tup2 = tuple!("z", 8);
+    /// let (output, replaced) = tup.replace_head(tup2);
+    /// assert_eq!(output, tuple!("z", 8, 3.0, Some(4)));
+    /// assert_eq!(replaced, tuple!(1, "2"));
+    /// ```
+    fn replace_head(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced);
+}
+
+impl<T> HeadReplacable<Unit> for T
+where
+    Self: TupleLike,
+{
+    type ReplaceOutput = Self;
+    type Replaced = Unit;
+    fn replace_head(self, rhs: Unit) -> (Self::ReplaceOutput, Self::Replaced) {
+        (self, rhs)
+    }
+}
+
+impl<First1, Other1, First2, Other2> HeadReplacable<Tuple<First2, Other2>> for Tuple<First1, Other1>
+where
+    Other1: HeadReplacable<Other2>,
+{
+    type ReplaceOutput = Tuple<First2, Other1::ReplaceOutput>;
+    type Replaced = Tuple<First1, Other1::Replaced>;
+    fn replace_head(self, rhs: Tuple<First2, Other2>) -> (Self::ReplaceOutput, Self::Replaced) {
+        let (output, replaced) = HeadReplacable::replace_head(self.1, rhs.1);
+        (Tuple(rhs.0, output), Tuple(self.0, replaced))
+    }
+}
