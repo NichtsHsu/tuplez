@@ -1,3 +1,5 @@
+#[cfg(feature = "unwrap")]
+use crate::unwrap::*;
 use crate::{
     fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*, search::Search,
 };
@@ -853,9 +855,9 @@ pub trait TupleLike {
 
     /// Convert a `tuple!(a, b, c ...)` to `tuple!(Some(a), Some(b), Some(c) ...)`.
     ///
-    /// See [`unwrap()`](crate::unwrap::Unwrap::unwrap()),
-    /// [`unwrap_or_default()`](crate::unwrap::UnwrapOrDefault::unwrap_or_default())
-    /// or [`try_unwrap()`](crate::Tuple::try_unwrap()) for the opposite operation.
+    /// See [`unwrap()`](TupleLike::unwrap()),
+    /// [`unwrap_or_default()`](TupleLike::unwrap_or_default())
+    /// or [`try_unwrap()`](TupleLike::try_unwrap()) for the opposite operation.
     ///
     /// # Example
     ///
@@ -871,9 +873,9 @@ pub trait TupleLike {
     ///
     /// Note: You need to provide the error type.
     ///
-    /// See [`unwrap()`](crate::unwrap::Unwrap::unwrap()),
-    /// [`unwrap_or_default()`](crate::unwrap::UnwrapOrDefault::unwrap_or_default())
-    /// or [`try_unwrap()`](crate::Tuple::try_unwrap()) for the opposite operation.
+    /// See [`unwrap()`](TupleLike::unwrap()),
+    /// [`unwrap_or_default()`](TupleLike::unwrap_or_default())
+    /// or [`try_unwrap()`](TupleLike::try_unwrap()) for the opposite operation.
     ///
     /// # Example
     ///
@@ -1204,6 +1206,102 @@ pub trait TupleLike {
         Self: Combinable<T> + Sized,
     {
         Combinable::combine(self, rhs)
+    }
+
+    /// Get the contained value.
+    ///
+    /// Only available if the `unwrap` feature is enabled (enabled by default).
+    ///
+    /// Because this function may panic, its use is generally discouraged. Instead,
+    /// use [`unwrap_or_default()`](TupleLike::unwrap_or_default()) or
+    /// [`try_unwrap()`](TupleLike::try_unwrap()).
+    ///
+    /// # Panic
+    ///
+    /// Panic if self does not contain a value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(Some(1), Ok::<f32, ()>(3.14), Some("hello"));
+    /// assert_eq!(tup.unwrap(), tuple!(1, 3.14, "hello"));
+    /// ```
+    #[cfg(feature = "unwrap")]
+    fn unwrap(self) -> Self::UnwrapOutput
+    where
+        Self: Unwrap + Sized,
+    {
+        Unwrap::unwrap(self)
+    }
+
+    /// Check if self contains a value.
+    /// It usually indicates whether the tuple can safely [`unwrap()`](TupleLike::unwrap())
+    ///
+    /// Only available if the `unwrap` feature is enabled (enabled by default).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// assert_eq!(tuple!(Some(1), Some(3.14), Ok::<&str, ()>("hello")).has_value(), true);
+    /// assert_eq!(tuple!(None::<i32>, Some(3.14), Err::<&str, ()>(())).has_value(), false);
+    /// ```
+    #[cfg(feature = "unwrap")]
+    fn has_value(&self) -> bool
+    where
+        Self: Unwrap,
+    {
+        Unwrap::has_value(self)
+    }
+
+    /// Get the contained value, or the default value if self does not contain a value.
+    ///
+    /// Only available if the `unwrap` feature is enabled (enabled by default).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(Some(1), Err::<f32, &str>("failed"), Some("hello"));
+    /// assert_eq!(tup.unwrap_or_default(), tuple!(1, 0.0, "hello"));
+    /// ```
+    #[cfg(feature = "unwrap")]
+    fn unwrap_or_default(self) -> Self::UnwrapOutput
+    where
+        Self: UnwrapOrDefault + Sized,
+    {
+        UnwrapOrDefault::unwrap_or_default(self)
+    }
+
+    /// Convert `Tuple<Wrapper0<T0>, Wrapper1<T1>, ... Wrappern<Tn>>` to `Option<Tuple<T0, T1, ..., Tn>>`,
+    /// when all element types `Wrapper0`, `Wrapper1` ... `Wrappern` implmenet [`Unwrap`].
+    ///
+    /// Only available if the `unwrap` feature is enabled (enabled by default).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(Some(1), Ok::<f32, ()>(3.14));
+    /// assert_eq!(tup.try_unwrap(), Some(tuple!(1, 3.14)));
+    /// let tup2 = tuple!(Some("hello"), Err::<i32, &str>("failed"));
+    /// assert_eq!(tup2.try_unwrap(), None);
+    /// ```
+    #[cfg(feature = "unwrap")]
+    fn try_unwrap(self) -> Option<Self::UnwrapOutput>
+    where
+        Self: Unwrap + Sized,
+    {
+        if Unwrap::has_value(&self) {
+            Some(Unwrap::unwrap(self))
+        } else {
+            None
+        }
     }
 }
 

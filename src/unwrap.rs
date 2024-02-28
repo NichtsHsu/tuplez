@@ -21,13 +21,16 @@ use crate::{Tuple, TupleLike, Unit};
 /// Implement [`Unwrap`] for your own wrapper types so that a [`Tuple`] containing your wrappers can be [`unwrap()`](Unwrap::unwrap()).
 pub trait Unwrap {
     /// Type of the contained value.
-    type Output;
+    type UnwrapOutput;
 
     /// Get the contained value.
     ///
     /// Because this function may panic, its use is generally discouraged. Instead,
     /// use [`unwrap_or_default()`](UnwrapOrDefault::unwrap_or_default()) or
     /// [`try_unwrap()`](Tuple::try_unwrap()).
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`unwrap()`](TupleLike::unwrap()) method as the wrapper
+    /// for this [`unwrap()`](Unwrap::unwrap()) method.
     ///
     /// # Panic
     ///
@@ -36,16 +39,28 @@ pub trait Unwrap {
     /// # Example
     ///
     /// ```
-    /// use tuplez::{tuple, unwrap::Unwrap};
+    /// use tuplez::{tuple, TupleLike};
     ///
     /// let tup = tuple!(Some(1), Ok::<f32, ()>(3.14), Some("hello"));
     /// assert_eq!(tup.unwrap(), tuple!(1, 3.14, "hello"));
     /// ```
-    fn unwrap(self) -> Self::Output;
+    fn unwrap(self) -> Self::UnwrapOutput;
 
     /// Check if self contains a value.
     ///
     /// Soundess requirement: When [`has_value()`](Unwrap::has_value()) returns true, [`unwrap()`](Unwrap::unwrap()) cannot panic.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`has_value()`](TupleLike::has_value()) method as the wrapper
+    /// for this [`has_value()`](Unwrap::has_value()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// assert_eq!(tuple!(Some(1), Some(3.14), Ok::<&str, ()>("hello")).has_value(), true);
+    /// assert_eq!(tuple!(None::<i32>, Some(3.14), Err::<&str, ()>(())).has_value(), false);
+    /// ```
     fn has_value(&self) -> bool;
 }
 
@@ -66,24 +81,27 @@ pub trait Unwrap {
 /// be [`unwrap_or_default()`](UnwrapOrDefault::unwrap_or_default()).
 pub trait UnwrapOrDefault {
     /// Type of the contained value.
-    type Output;
+    type UnwrapOutput;
 
     /// Get the contained value, or the default value if self does not contain a value.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`unwrap_or_default()`](TupleLike::unwrap_or_default())
+    /// method as the wrapper for this [`unwrap_or_default()`](UnwrapOrDefault::unwrap_or_default()) method.
     ///
     /// # Example
     ///
     /// ```
-    /// use tuplez::{tuple, unwrap::UnwrapOrDefault};
+    /// use tuplez::{tuple, TupleLike};
     ///
     /// let tup = tuple!(Some(1), Err::<f32, &str>("failed"), Some("hello"));
     /// assert_eq!(tup.unwrap_or_default(), tuple!(1, 0.0, "hello"));
     /// ```
-    fn unwrap_or_default(self) -> Self::Output;
+    fn unwrap_or_default(self) -> Self::UnwrapOutput;
 }
 
 impl<T> Unwrap for Option<T> {
-    type Output = T;
-    fn unwrap(self) -> Self::Output {
+    type UnwrapOutput = T;
+    fn unwrap(self) -> Self::UnwrapOutput {
         self.unwrap()
     }
     fn has_value(&self) -> bool {
@@ -92,8 +110,8 @@ impl<T> Unwrap for Option<T> {
 }
 
 impl<T, E: std::fmt::Debug> Unwrap for Result<T, E> {
-    type Output = T;
-    fn unwrap(self) -> Self::Output {
+    type UnwrapOutput = T;
+    fn unwrap(self) -> Self::UnwrapOutput {
         self.unwrap()
     }
     fn has_value(&self) -> bool {
@@ -102,22 +120,22 @@ impl<T, E: std::fmt::Debug> Unwrap for Result<T, E> {
 }
 
 impl<T: Default> UnwrapOrDefault for Option<T> {
-    type Output = T;
-    fn unwrap_or_default(self) -> Self::Output {
+    type UnwrapOutput = T;
+    fn unwrap_or_default(self) -> Self::UnwrapOutput {
         self.unwrap_or_default()
     }
 }
 
 impl<T: Default, E> UnwrapOrDefault for Result<T, E> {
-    type Output = T;
-    fn unwrap_or_default(self) -> Self::Output {
+    type UnwrapOutput = T;
+    fn unwrap_or_default(self) -> Self::UnwrapOutput {
         self.unwrap_or_default()
     }
 }
 
 impl Unwrap for Unit {
-    type Output = Unit;
-    fn unwrap(self) -> Self::Output {
+    type UnwrapOutput = Unit;
+    fn unwrap(self) -> Self::UnwrapOutput {
         Self
     }
     fn has_value(&self) -> bool {
@@ -130,18 +148,18 @@ where
     Other: TupleLike + Unwrap,
     First: Unwrap,
 {
-    type Output = Tuple<<First as Unwrap>::Output, <Other as Unwrap>::Output>;
-    fn unwrap(self) -> Self::Output {
-        Tuple(self.0.unwrap(), self.1.unwrap())
+    type UnwrapOutput = Tuple<First::UnwrapOutput, Other::UnwrapOutput>;
+    fn unwrap(self) -> Self::UnwrapOutput {
+        Tuple(Unwrap::unwrap(self.0), Unwrap::unwrap(self.1))
     }
     fn has_value(&self) -> bool {
-        self.0.has_value() && self.1.has_value()
+        Unwrap::has_value(&self.0) && Unwrap::has_value(&self.1)
     }
 }
 
 impl UnwrapOrDefault for Unit {
-    type Output = Unit;
-    fn unwrap_or_default(self) -> Self::Output {
+    type UnwrapOutput = Unit;
+    fn unwrap_or_default(self) -> Self::UnwrapOutput {
         Self
     }
 }
@@ -153,42 +171,16 @@ impl Unit {
     }
 }
 
-impl<First, Other> Tuple<First, Other>
-where
-    Other: TupleLike + Unwrap,
-    First: Unwrap,
-{
-    /// Convert `Tuple<Wrapper0<T0>, Wrapper1<T1>, ... Wrappern<Tn>>` to `Option<Tuple<T0, T1, ..., Tn>>`,
-    /// when all element types `Wrapper0`, `Wrapper1` ... `Wrappern` implmenet [`Unwrap`].
-    ///
-    /// Only available if the `unwrap` feature is enabled (enabled by default).
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use tuplez::tuple;
-    ///
-    /// let tup = tuple!(Some(1), Ok::<f32, ()>(3.14));
-    /// assert_eq!(tup.try_unwrap(), Some(tuple!(1, 3.14)));
-    /// let tup2 = tuple!(Some("hello"), Err::<i32, &str>("failed"));
-    /// assert_eq!(tup2.try_unwrap(), None);
-    /// ```
-    pub fn try_unwrap(self) -> Option<<Self as Unwrap>::Output> {
-        if self.has_value() {
-            Some(self.unwrap())
-        } else {
-            None
-        }
-    }
-}
-
 impl<First, Other> UnwrapOrDefault for Tuple<First, Other>
 where
     Other: TupleLike + UnwrapOrDefault,
     First: UnwrapOrDefault,
 {
-    type Output = Tuple<<First as UnwrapOrDefault>::Output, <Other as UnwrapOrDefault>::Output>;
-    fn unwrap_or_default(self) -> Self::Output {
-        Tuple(self.0.unwrap_or_default(), self.1.unwrap_or_default())
+    type UnwrapOutput = Tuple<First::UnwrapOutput, Other::UnwrapOutput>;
+    fn unwrap_or_default(self) -> Self::UnwrapOutput {
+        Tuple(
+            UnwrapOrDefault::unwrap_or_default(self.0),
+            UnwrapOrDefault::unwrap_or_default(self.1),
+        )
     }
 }

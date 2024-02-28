@@ -100,8 +100,10 @@ macro_rules! __tuple_traits_impl {
     };
 }
 
+#[cfg(not(feature = "any_array"))]
 pub(crate) use __from_array;
 pub(crate) use __from_primitive;
+#[cfg(not(feature = "any_array"))]
 pub(crate) use __to_array;
 pub(crate) use __to_primitive;
 #[cfg(not(feature = "any_array"))]
