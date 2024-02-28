@@ -46,6 +46,7 @@
 //!
 //! * `any_array`: Use Rust's unstable feature to implement conversion from/to primitive arrays on tuples with any number of elements.
 //! This feature requires compiling with rustc released to nightly channel.
+//! * `serde`: Derive `Serialize` and `Deserialize` for tuples.
 //! * `unwrap` (by default): Allows converting a tuple whose elements are all wrappers into a tuple of the values those wrappers contain.
 //! See [`unwrap`](TupleLike::unwrap()).
 //!

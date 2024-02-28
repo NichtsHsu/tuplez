@@ -3,6 +3,8 @@ use crate::unwrap::*;
 use crate::{
     fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*, search::Search,
 };
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -19,6 +21,7 @@ use std::ops::{
 /// let unit = tuple!();
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Unit;
 
 /// The type used to represent tuples containing at least one element.
@@ -462,6 +465,7 @@ pub struct Unit;
 /// let _ = <tuple_t!()>::from([""; 0]);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Tuple<First, Other>(
     /// First element.
     pub First,
