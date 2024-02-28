@@ -185,6 +185,7 @@ where
     }
 }
 
+/// Replace a sequence of elements in the tuple with all elements of another tuple.
 pub trait ReplaceWith<T, Result>: TupleLike {
     /// Replace a sequence of elements in the tuple with all elements of another tuple.
     ///
