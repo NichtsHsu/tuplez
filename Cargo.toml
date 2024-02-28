@@ -26,6 +26,7 @@ categories = ["data-structures"]
 
 [features]
 default = ["unwrap"]
+full = [ "any_array", "serde", "unwrap" ]
 any_array = []
 unwrap = []
 
