@@ -1554,6 +1554,27 @@ where
 ///     // ...
 /// }
 /// ```
+/// 
+/// # Example
+/// 
+/// Use with [`tuple_t!`](crate::tuple_t!) macro to constrain the number of elements of the tuple.
+/// 
+/// ```
+/// use tuplez::{tuple, tuple_t, TupleLenEqTo, TupleLike};
+/// 
+/// fn only_accept_5_elements<T>(_: T)
+/// where
+///     T: TupleLenEqTo<tuple_t!((); 5)>
+/// {
+/// }
+/// 
+/// let tup4 = tuple!(1, 2.0, "3", 4);
+/// // only_accept_5_elements(tup4);    // Error: the trait bound is not satisfied
+/// let tup5 = tup4.push_back('5');
+/// only_accept_5_elements(tup5);       // Ok
+/// let tup6 = tup5.push_back(6.0);
+/// // only_accept_5_elements(tup6);    // Error: the trait bound is not satisfied
+/// ```
 pub trait TupleLenEqTo<T: TupleLike>: TupleLike {}
 
 impl TupleLenEqTo<Unit> for Unit {}
