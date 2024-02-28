@@ -578,17 +578,17 @@ pub use tuplez_macros::folder;
 /// For example:
 ///
 /// ```
-/// use tuplez::{fold::SeqFolder, seq_folder, tuple, TupleLike};
+/// use tuplez::{seq_folder, tuple, TupleLike};
 ///
 /// let tup = tuple!(1, "2", 3.0);
-/// let folder = seq_folder!(
-///     |acc, x| (acc + x) as f64,
-///     |acc: f64, x: &str| acc.to_string() + x,
-///     |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
+/// let result = tup.fold(
+///     seq_folder!(
+///         |acc, x| (acc + x) as f64,
+///         |acc: f64, x: &str| acc.to_string() + x,
+///         |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
+///     ),  // Type of `acc` of each closure is the return type of the previous closure.
+///     0,
 /// );
-/// let tup_folder = folder.to_tuple();
-/// let folder = SeqFolder::from(tup_folder);
-/// let result = tup.fold(folder, 0);
 /// assert_eq!(result, 15);
 /// ```
 pub use tuplez_macros::seq_folder;
