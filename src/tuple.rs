@@ -120,6 +120,24 @@ pub struct Unit;
 /// let tup: tuple_t!(i32, f64;3, i32) = tuple!(1, 2.0, 3.0, 4.0, 5);
 /// ```
 ///
+/// Sometimes, you may want to know the exact type of a tuple variable, so that you can call an associated method
+/// of this tuple type, such as, [`Default::default()`]. However, the signature of this type can be very long
+/// and complex, and you may not want to write it out completely via [`tuple_t!`](crate::tuple_t!).
+///
+/// Here's a little trick that might help:
+///
+/// ```
+/// use tuplez::tuple;
+///
+/// fn default_by<T: Default>(_: &T) -> T {
+///     T::default()
+/// }
+///
+/// let tup = tuple!([1, 2, 3], tuple!("hello".to_string(), 3.14), 8);
+/// let tup2 = default_by(&tup);
+/// assert_eq!(tup2, tuple!([0; 3], tuple!(String::new(), 0.0), 0));
+/// ```
+///
 /// # Element access
 ///
 /// There is a [`get!`](crate::get) macro that can be used to get elements,

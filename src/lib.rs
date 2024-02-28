@@ -48,7 +48,7 @@
 //! This feature requires compiling with rustc released to nightly channel.
 //! * `serde`: Derive `Serialize` and `Deserialize` for tuples.
 //! * `unwrap` (by default): Allows converting a tuple whose elements are all wrappers into a tuple of the values those wrappers contain.
-//! See [`unwrap`](TupleLike::unwrap()).
+//! See [`unwrap()`](TupleLike::unwrap()).
 //!
 //! # Examples
 //!
