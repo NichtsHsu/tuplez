@@ -215,6 +215,15 @@ impl Parse for Rule {
             output_type = Some(input.parse()?);
         }
         let body = input.parse()?;
+        loop {
+            if input.peek(Token![,]) {
+                let _: Token![,] = input.parse()?;
+            } else if input.peek(Token![;]) {
+                let _: Token![;] = input.parse()?;
+            } else {
+                break;
+            }
+        }
 
         Ok(Rule {
             generic,

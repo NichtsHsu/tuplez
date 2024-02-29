@@ -410,7 +410,7 @@ pub use tuplez_macros::split_at;
 ///
 /// ```text
 /// Generic = [Lifetime1, Lifetime2, ...] [Type1 [: Bound1], Type2 [: Bound2], ...]
-/// Rule    = [ < Generic > ] | Variable : InputType | [-> OutputType] { Body }
+/// Rule    = [ < Generic > ] | Variable : InputType | [-> OutputType] { Body } [,] [;]
 ///
 /// mapper!( [Rule1 Rule2 ... ] )
 /// ```
@@ -473,6 +473,8 @@ pub use tuplez_macros::split_at;
 /// assert_eq!(tup, tuple!(2i64, b"hello" as &[u8], "3.14".to_string()));
 /// ```
 ///
+/// It is allowed to add commas or semicolons as separators between rules. Sometimes this may look better.
+///
 /// Tip: If you don't want to consume the tuple, call its [`as_ref()`](crate::TupleLike::as_ref()) before traversing.
 /// Likewise, if you want to modify elements of tuple, call its [`as_mut()`](crate::TupleLike::as_mut()) before traversing.
 ///
@@ -503,7 +505,7 @@ pub use tuplez_macros::mapper;
 ///
 /// ```text
 /// Generic = [Lifetime1, Lifetime2, ...] [Type1 [: Bound1], Type2 [: Bound2], ...]
-/// Rule    = [ < Generic > ] | Variable1, Variable2 : InputType | { Body }
+/// Rule    = [ < Generic > ] | Variable1, Variable2 : InputType | { Body } [,] [;]
 ///
 /// folder!( OutputType; [Rule1 Rule2 ... ] )
 /// ```
@@ -556,6 +558,8 @@ pub use tuplez_macros::mapper;
 /// );
 /// assert_eq!(result, 6);
 /// ```
+///
+/// It is allowed to add commas or semicolons as separators between rules. Sometimes this may look better.
 pub use tuplez_macros::folder;
 
 /// Provides a simple way to build a folder that implements [`Folder`](crate::fold::Folder).
