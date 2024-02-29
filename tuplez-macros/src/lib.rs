@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::parse_macro_input;
+use syn::{parse_macro_input, Expr};
 
 mod parser;
 
@@ -106,6 +106,45 @@ pub fn split_at(input: TokenStream) -> TokenStream {
     quote!({
         #tup ;
         ( #unpack, #other )
+    })
+    .into()
+}
+
+#[proc_macro]
+pub fn apply(input: TokenStream) -> TokenStream {
+    let TupleApply {
+        tup,
+        mut func,
+        args,
+    } = parse_macro_input!(input as TupleApply);
+    let tup = quote!( #[allow(unused_mut)] let mut tup_ = #tup );
+    let field_at = |index| {
+        let field = quote!(. 1);
+        let fields = vec![field.clone(); index];
+        quote!( tup_ #(#fields)* . 0)
+    };
+    args.0
+        .into_iter()
+        .map(move |arg| match arg {
+            TupleArg::Move(index) => field_at(index),
+            TupleArg::Ref(index) => {
+                let arg = field_at(index);
+                quote!(& #arg)
+            }
+            TupleArg::Mut(index) => {
+                let arg = field_at(index);
+                quote!(& mut #arg)
+            }
+        })
+        .map(|arg| syn::parse2::<Expr>(arg).unwrap())
+        .for_each(|arg| match &mut func {
+            Expr::Call(call) => call.args.push(arg),
+            Expr::MethodCall(call) => call.args.push(arg),
+            _ => (),
+        });
+    quote!({
+        #tup ;
+        #func
     })
     .into()
 }

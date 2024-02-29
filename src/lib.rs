@@ -596,3 +596,82 @@ pub use tuplez_macros::folder;
 /// assert_eq!(result, 15);
 /// ```
 pub use tuplez_macros::seq_folder;
+
+/// Pass the elements of a tuple as arguments to a function or method.
+///
+/// # Syntax
+///
+/// ```text
+/// ArgsGroup   = Index [ - Index ]
+///
+/// apply!( Expr => Func ( [ArgsGroup1, ArgsGroup2, ...] ) )
+/// ```
+///
+/// *`[` and `]` only indicate the optional content but not that they need to be input.*
+///
+/// *Similarly, `...` indicates several repeated segments, rather than inputting `...`.*
+///
+/// # Explanation
+///
+/// You can pass the elements of the tuple into the function or method in the order you want:
+///
+/// ```
+/// use tuplez::{tuple, apply};
+///
+/// fn test(_: i32, _: f64, _: &str) {}
+///
+/// let tup = tuple!(3.4, 2, "hello", [1, 2, 3], 8);
+/// apply!(tup => test(4, 0, 2));   // Expand to `test(8, 3.4, "hello")`
+/// ```
+///
+/// Parts in the same order can be omitted in the form `start - end`:
+///
+/// ```
+/// use tuplez::{tuple, apply};
+///
+/// fn test(_: i32, _: f64, _: &str, _: [i32; 3]) {}
+///
+/// let tup = tuple!([1, 2, 3], 2, 3.4, "hello", 9);
+/// apply!(tup => test(1-3, 0));    // `1-3` expands to `1, 2, 3`
+/// ```
+///
+/// You can add `&` or `&mut` to elements to borrow them. Here is a slightly more complex example:
+///
+/// ```
+/// use tuplez::{tuple, apply};
+///
+/// struct DoIt<T>(T);
+/// impl<T> DoIt<T> {
+///     fn do_sth(&self, _: String, _: f64, _: &str, _: &mut i32, _: &mut [T; 3], _: &i32) {}
+/// }
+///
+/// let tup = tuple!(
+///     1,
+///     [5, 2, 4],
+///     9.8,
+///     "world".to_string(),
+///     3.14,
+///     "hello",
+///     7,
+///     "zzz"
+/// );
+/// apply!(tup => DoIt::<i32>(7).do_sth(3-5, &mut 0-1, &6));
+/// ```
+///
+/// NOTE: [`apply!`] consumes the tuple, even if you add `&` or `&mut` to each elements.
+/// Sometimes you can avoid this by adding a `&` or `&mut` before the tuple:
+///
+/// ```
+/// use tuplez::{tuple, apply};
+/// fn push(v: &mut Vec<i32>, x: i32) {
+///     v.push(x)
+/// }
+///
+/// let mut tup = tuple!(vec![1, 2], 3);
+/// apply!(&mut tup => push(&mut 0, 1));
+/// assert_eq!(tup, tuple!(vec![1, 2, 3], 3));
+/// ```
+///
+/// It is worth mentioning that the input tuple can be any expression.
+/// The `&tup` and the `&mut tup` are just two of the many possible inputs.
+pub use tuplez_macros::apply;

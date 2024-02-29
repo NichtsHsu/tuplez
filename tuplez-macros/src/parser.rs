@@ -1,5 +1,9 @@
-use std::collections::VecDeque;
+use std::{
+    collections::VecDeque,
+    ops::{Add, AddAssign},
+};
 
+use quote::ToTokens;
 use syn::{parse::Parse, Expr, ExprBlock, Generics, Ident, LitInt, Pat, Token, Type};
 
 pub struct TupleGen(pub Vec<Expr>);
@@ -167,6 +171,88 @@ impl Parse for TupleTake {
             tup,
             ext: IndexOrType::Type(ty),
         })
+    }
+}
+
+pub enum TupleArg {
+    Move(usize),
+    Ref(usize),
+    Mut(usize),
+}
+
+#[derive(Default)]
+pub struct ArgList(pub VecDeque<TupleArg>);
+
+impl Add for ArgList {
+    type Output = Self;
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self += rhs;
+        self
+    }
+}
+
+impl AddAssign for ArgList {
+    fn add_assign(&mut self, mut rhs: Self) {
+        self.0.append(&mut rhs.0);
+    }
+}
+
+impl Parse for ArgList {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut args = VecDeque::new();
+
+        let mut ctor: fn(usize) -> TupleArg = TupleArg::Move;
+        if input.peek(Token![&]) {
+            let _: Token![&] = input.parse()?;
+            ctor = TupleArg::Ref;
+            if input.peek(Token![mut]) {
+                let _: Token![mut] = input.parse()?;
+                ctor = TupleArg::Mut;
+            }
+        }
+
+        let start: LitInt = input.parse()?;
+        let start: usize = start.base10_parse()?;
+        let mut end = start;
+        if input.peek(Token![-]) {
+            let _: Token![-] = input.parse()?;
+            let end_: LitInt = input.parse()?;
+            end = end_.base10_parse()?;
+        }
+        (start..=end).for_each(|i| args.push_back(ctor(i)));
+
+        Ok(ArgList(args))
+    }
+}
+
+pub struct TupleApply {
+    pub tup: Expr,
+    pub func: Expr,
+    pub args: ArgList,
+}
+
+impl Parse for TupleApply {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let tup = input.parse()?;
+        let _: Token![=>] = input.parse()?;
+        let mut func: Expr = input.parse()?;
+
+        let args;
+        match &mut func {
+            Expr::Call(call) => {
+                args = std::mem::take(&mut call.args);
+            }
+            Expr::MethodCall(call) => {
+                args = std::mem::take(&mut call.args);
+            }
+            _ => return Err(input.error("expected function call")),
+        }
+        let args = args
+            .into_iter()
+            .map(|arg| syn::parse2::<ArgList>(arg.into_token_stream()))
+            .try_fold(ArgList::default(), |acc, x| x.and_then(|x| Ok(acc + x)))?;
+
+        Ok(TupleApply { tup, func, args })
     }
 }
 
