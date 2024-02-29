@@ -489,7 +489,7 @@ pub struct Tuple<First, Other>(
     pub Other,
 );
 
-/// The [`TupleLike`] trait defines the basic methods of tuples.
+/// Define the basic methods of tuples.
 ///
 /// NOTE: Due to the limitation that Rust does not support the variadic to represent
 /// [primitive tuple types]((https://doc.rust-lang.org/std/primitive.tuple.html)) containing any number of elements,
