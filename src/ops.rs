@@ -827,3 +827,199 @@ where
         (Tuple(rhs.0, output), Tuple(self.0, replaced))
     }
 }
+
+/// Helper class that indicates types implemented [`Clone`].
+pub struct PhantomClone;
+
+/// Helper class that indicates mutable references.
+pub struct PhantomMut;
+
+/// When all elements implement [`Fn(T)`](std::ops::Fn) for a specific `T`, call them once in sequence.
+pub trait Callable<T, P>: TupleLike {
+    /// Type of the tuple collecting results of each call.
+    type Output: TupleLike;
+
+    /// When all elements of the tuple implement [`Fn(T)`](std::ops::Fn) for a specific `T`,
+    /// call them once in sequence.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`call()`](TupleLike::call()) method as the wrapper
+    /// for this [`call()`](Callable::call()) method.
+    ///
+    /// # Example
+    ///
+    /// It is required that `T` implements [`Clone`].
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// fn add1(x: i32) -> i32 {
+    ///     x + 1
+    /// }
+    /// fn add2(x: i32) -> i32 {
+    ///     x + 2
+    /// }
+    /// fn to_string(x: i32) -> String {
+    ///     x.to_string()
+    /// }
+    ///
+    /// let tup = tuple!(add1, add2, to_string).call(1);
+    /// assert_eq!(tup, tuple!(2, 3, "1".to_string()));
+    /// ```
+    ///
+    /// ...however, due to the existence of reborrowing, we can use some tricks to allow
+    /// the mutable references to be used as parameters multiple times.
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// fn add1(x: &mut i32) {
+    ///     *x += 1
+    /// }
+    /// fn add2(x: &mut i32) {
+    ///     *x += 2
+    /// }
+    /// fn to_string(x: &mut i32) -> String {
+    ///     x.to_string()
+    /// }
+    ///
+    /// let mut x = 1;
+    /// let tup = tuple!(add1, add2, to_string).call(&mut x);
+    /// assert_eq!(x, 4);
+    /// assert_eq!(tup, tuple!((), (), "4".to_string()));
+    /// ```
+    fn call(&self, rhs: T) -> Self::Output;
+}
+
+impl<T, P> Callable<T, P> for Unit {
+    type Output = Unit;
+    fn call(&self, _: T) -> Self::Output {
+        Unit
+    }
+}
+
+impl<T, R, First, Other> Callable<T, PhantomClone> for Tuple<First, Other>
+where
+    T: Clone,
+    First: Fn(T) -> R,
+    Other: Callable<T, PhantomClone>,
+{
+    type Output = Tuple<R, Other::Output>;
+    fn call(&self, rhs: T) -> Self::Output {
+        Tuple((self.0)(rhs.clone()), Callable::call(&self.1, rhs))
+    }
+}
+
+impl<'a, T, R, First, Other> Callable<&'a mut T, PhantomMut> for Tuple<First, Other>
+where
+    First: Fn(&mut T) -> R,
+    R: 'a,
+    Other: Callable<&'a mut T, PhantomMut>,
+{
+    type Output = Tuple<R, <Other as Callable<&'a mut T, PhantomMut>>::Output>;
+    fn call(&self, rhs: &'a mut T) -> Self::Output {
+        Tuple((self.0)(&mut *rhs), Callable::call(&self.1, &mut *rhs))
+    }
+}
+
+/// When all elements implement [`FnMut(T)`](std::ops::FnMut) for a specific `T`, call them once in sequence.
+pub trait MutCallable<T, P>: TupleLike {
+    /// Type of the tuple collecting results of each call.
+    type Output: TupleLike;
+
+    /// When all elements of the tuple implement [`FnMut(T)`](std::ops::FnMut) for a specific `T`,
+    /// call them once in sequence.
+    ///
+    /// Basically the same as [`call()`](Callable::call()), but elements are required to implement
+    /// [`FnMut(T)`](std::ops::FnMut) instead of [`Fn(T)`](std::ops::Fn).
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`call_mut()`](TupleLike::call_mut()) method as the wrapper
+    /// for this [`call_mut()`](MutCallable::call_mut()) method.
+    fn call_mut(&mut self, rhs: T) -> Self::Output;
+}
+
+impl<T, P> MutCallable<T, P> for Unit {
+    type Output = Unit;
+    fn call_mut(&mut self, _: T) -> Self::Output {
+        Unit
+    }
+}
+
+impl<T, R, First, Other> MutCallable<T, PhantomClone> for Tuple<First, Other>
+where
+    T: Clone,
+    First: FnMut(T) -> R,
+    Other: MutCallable<T, PhantomClone>,
+{
+    type Output = Tuple<R, Other::Output>;
+    fn call_mut(&mut self, rhs: T) -> Self::Output {
+        Tuple(
+            (self.0)(rhs.clone()),
+            MutCallable::call_mut(&mut self.1, rhs),
+        )
+    }
+}
+
+impl<'a, T, R, First, Other> MutCallable<&'a mut T, PhantomMut> for Tuple<First, Other>
+where
+    First: FnMut(&mut T) -> R,
+    R: 'a,
+    Other: MutCallable<&'a mut T, PhantomMut>,
+{
+    type Output = Tuple<R, <Other as MutCallable<&'a mut T, PhantomMut>>::Output>;
+    fn call_mut(&mut self, rhs: &'a mut T) -> Self::Output {
+        Tuple(
+            (self.0)(&mut *rhs),
+            MutCallable::call_mut(&mut self.1, &mut *rhs),
+        )
+    }
+}
+
+/// When all elements implement `FnOnce(T)` for a specific `T`, call them once in sequence.
+pub trait OnceCallable<T, P>: TupleLike {
+    /// Type of the tuple collecting results of each call.
+    type Output: TupleLike;
+
+    /// When all elements of the tuple implement [`FnOnce(T)`](std::ops::FnOnce) for a specific `T`,
+    /// call them once in sequence.
+    ///
+    /// Basically the same as [`call()`](Callable::call()), but elements are required to implement
+    /// [`FnOnce(T)`](std::ops::FnOnce) instead of [`Fn(T)`](std::ops::Fn).
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`call_once()`](TupleLike::call_once()) method as the wrapper
+    /// for this [`call_once()`](OnceCallable::call_once()) method.
+    fn call_once(self, rhs: T) -> Self::Output;
+}
+
+impl<T, P> OnceCallable<T, P> for Unit {
+    type Output = Unit;
+    fn call_once(self, _: T) -> Self::Output {
+        Unit
+    }
+}
+
+impl<T, R, First, Other> OnceCallable<T, PhantomClone> for Tuple<First, Other>
+where
+    T: Clone,
+    First: FnOnce(T) -> R,
+    Other: OnceCallable<T, PhantomClone>,
+{
+    type Output = Tuple<R, Other::Output>;
+    fn call_once(self, rhs: T) -> Self::Output {
+        Tuple((self.0)(rhs.clone()), OnceCallable::call_once(self.1, rhs))
+    }
+}
+
+impl<'a, T, R, First, Other> OnceCallable<&'a mut T, PhantomMut> for Tuple<First, Other>
+where
+    First: FnOnce(&mut T) -> R,
+    R: 'a,
+    Other: OnceCallable<&'a mut T, PhantomMut>,
+{
+    type Output = Tuple<R, <Other as OnceCallable<&'a mut T, PhantomMut>>::Output>;
+    fn call_once(self, rhs: &'a mut T) -> Self::Output {
+        Tuple(
+            (self.0)(&mut *rhs),
+            OnceCallable::call_once(self.1, &mut *rhs),
+        )
+    }
+}

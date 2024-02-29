@@ -1323,6 +1323,82 @@ pub trait TupleLike {
         ReplaceWith::swap_with(self, rhs)
     }
 
+    /// When all elements of the tuple implement [`Fn(T)`](std::ops::Fn) for a specific `T`,
+    /// call them once in sequence.
+    ///
+    /// # Example
+    ///
+    /// It is required that `T` implements [`Clone`].
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// fn add1(x: i32) -> i32 {
+    ///     x + 1
+    /// }
+    /// fn add2(x: i32) -> i32 {
+    ///     x + 2
+    /// }
+    /// fn to_string(x: i32) -> String {
+    ///     x.to_string()
+    /// }
+    ///
+    /// let tup = tuple!(add1, add2, to_string).call(1);
+    /// assert_eq!(tup, tuple!(2, 3, "1".to_string()));
+    /// ```
+    ///
+    /// ...however, due to the existence of reborrowing, we can use some tricks to allow
+    /// the mutable references to be used as parameters multiple times.
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// fn add1(x: &mut i32) {
+    ///     *x += 1
+    /// }
+    /// fn add2(x: &mut i32) {
+    ///     *x += 2
+    /// }
+    /// fn to_string(x: &mut i32) -> String {
+    ///     x.to_string()
+    /// }
+    ///
+    /// let mut x = 1;
+    /// let tup = tuple!(add1, add2, to_string).call(&mut x);
+    /// assert_eq!(x, 4);
+    /// assert_eq!(tup, tuple!((), (), "4".to_string()));
+    /// ```
+    fn call<T, P>(&self, rhs: T) -> <Self as Callable<T, P>>::Output
+    where
+        Self: Callable<T, P>,
+    {
+        Callable::call(self, rhs)
+    }
+
+    /// When all elements of the tuple implement [`FnMut(T)`](std::ops::FnMut) for a specific `T`,
+    /// call them once in sequence.
+    ///
+    /// Basically the same as [`call()`](TupleLike::call()), but elements are required to implement
+    /// [`FnMut(T)`](std::ops::FnMut) instead of [`Fn(T)`](std::ops::Fn).
+    fn call_mut<T, P>(&mut self, rhs: T) -> <Self as MutCallable<T, P>>::Output
+    where
+        Self: MutCallable<T, P>,
+    {
+        MutCallable::call_mut(self, rhs)
+    }
+
+    /// When all elements of the tuple implement [`FnOnce(T)`](std::ops::FnOnce) for a specific `T`,
+    /// call them once in sequence.
+    ///
+    /// Basically the same as [`call()`](TupleLike::call()), but elements are required to implement
+    /// [`FnOnce(T)`](std::ops::FnOnce) instead of [`Fn(T)`](std::ops::Fn).
+    fn call_once<T, P>(self, rhs: T) -> <Self as OnceCallable<T, P>>::Output
+    where
+        Self: OnceCallable<T, P> + Sized,
+    {
+        OnceCallable::call_once(self, rhs)
+    }
+
     /// Get the contained value.
     ///
     /// Only available if the `unwrap` feature is enabled (enabled by default).
