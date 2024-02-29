@@ -15,7 +15,7 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// Tip: [`Mapper`] map elements by their types. If you are looking for a way to map elements by their order,
 /// then what you are looking for is to
-/// [pass a tuple containing callables into `fold()` method](Tuple#fold-tuples-in-order-of-their-elements-but-collecting-results-in-a-tuple).
+/// [pass a tuple containing callable objects into `fold()` method](Tuple#fold-tuples-in-order-of-their-elements-but-collecting-results-in-a-tuple).
 ///
 /// # The [`mapper!`](crate::mapper!) macro
 ///

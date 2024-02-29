@@ -188,7 +188,7 @@ where
 ///
 /// Basically, it is just a wrapper of [`Tuple`]. Because the
 /// [`Tuple` has another use as a `Folder`](Tuple#fold-tuples-in-order-of-their-elements-but-collecting-results-in-a-tuple),
-/// and Rust cannot implement the same trait agian for [`Tuple`]s that only have different element types.
+/// and Rust cannot implement the same trait again for [`Tuple`]s that only have different element types.
 /// Therefore, the [`SeqFolder`] is introduced.
 ///
 /// You should always use the [`seq_folder!`](crate::seq_folder!) macro to build a [`SeqFolder`].

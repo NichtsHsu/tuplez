@@ -133,7 +133,7 @@ where
 }
 
 /// replace tail elements of the tuple.
-pub trait TailReplacable<T, Result>: TupleLike {
+pub trait TailReplaceable<T, Result>: TupleLike {
     /// The type of the tuple after replacing its elements.
     type ReplaceOutput: TupleLike;
 
@@ -143,7 +143,7 @@ pub trait TailReplacable<T, Result>: TupleLike {
     /// Replace the last N elements of the tuple with all elements of another tuple of N elements.
     ///
     /// Hint: The [`TupleLike`] trait provides the [`replace_tail()`](TupleLike::replace_tail()) method as the wrapper
-    /// for this [`replace_tail()`](TailReplacable::replace_tail()) method.
+    /// for this [`replace_tail()`](TailReplaceable::replace_tail()) method.
     ///
     /// # Example
     ///
@@ -159,7 +159,7 @@ pub trait TailReplacable<T, Result>: TupleLike {
     fn replace_tail(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced);
 }
 
-impl<T, U> TailReplacable<T, Searched> for U
+impl<T, U> TailReplaceable<T, Searched> for U
 where
     T: TupleLenEqTo<U>,
     U: TupleLike,
@@ -172,15 +172,15 @@ where
     }
 }
 
-impl<First, Other, T, Result> TailReplacable<T, Searching<Result>> for Tuple<First, Other>
+impl<First, Other, T, Result> TailReplaceable<T, Searching<Result>> for Tuple<First, Other>
 where
-    Other: TailReplacable<T, Result>,
+    Other: TailReplaceable<T, Result>,
 {
     type ReplaceOutput = Tuple<First, Other::ReplaceOutput>;
     type Replaced = Other::Replaced;
 
     fn replace_tail(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced) {
-        let (output, replaced) = TailReplacable::replace_tail(self.1, rhs);
+        let (output, replaced) = TailReplaceable::replace_tail(self.1, rhs);
         (Tuple(self.0, output), replaced)
     }
 }

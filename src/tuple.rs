@@ -10,7 +10,7 @@ use std::ops::{
 
 /// The unit type that represents tuples of zero elements.
 ///
-/// Compared with [`Tuple`] type, the unit type does not implement the [`Popable`] trait.
+/// Compared with [`Tuple`] type, the unit type does not implement the [`Poppable`] trait.
 ///
 /// Suggestion: Use the parameterless [`tuple!`](crate::tuple!) macro to create an unit:
 ///
@@ -26,7 +26,7 @@ pub struct Unit;
 ///
 /// See [`Unit`] type which represents tuples containing no elements.
 ///
-/// The [`TupleLike`] trait defines the basic mothods of all [`Tuple`] types and [`Unit`] type.
+/// The [`TupleLike`] trait defines the basic methods of all [`Tuple`] types and [`Unit`] type.
 ///
 /// You can create a tuple quickly and easily using the [`tuple!`](crate::tuple!) macro:
 ///
@@ -192,7 +192,7 @@ pub struct Unit;
 /// assert_eq!(tup5, tuple!(1, "hello", 3.14, 1, "hello"));
 /// ```
 ///
-/// [`Unit`]s are not [`Popable`], and all [`Tuple`]s are [`Popable`]:
+/// [`Unit`]s are not [`Poppable`], and all [`Tuple`]s are [`Poppable`]:
 ///
 /// ```
 /// use tuplez::{tuple, TupleLike};
@@ -333,7 +333,7 @@ pub struct Unit;
 /// You can traverse tuples by [`foreach()`](TupleLike::foreach()).
 ///
 /// Call [`foreach()`](TupleLike::foreach()) on a tuple requires a functor implementing
-/// [`Mapper`](crate::foreach::Mapper) as the paramter. Check its documentation page for examples.
+/// [`Mapper`](crate::foreach::Mapper) as the parameter. Check its documentation page for examples.
 ///
 /// However, here is a [`mapper!`](crate::mapper!) macro that can help you quickly build a simple functor:
 ///
@@ -358,7 +358,7 @@ pub struct Unit;
 /// You can fold tuples by [`fold()`](TupleLike::fold()).
 ///
 /// Call [`fold()`](TupleLike::fold()) on a tuple requires a folder implementing
-/// [`Folder`](crate::fold::Folder) as the paramter. Check its documentation page for examples.
+/// [`Folder`](crate::fold::Folder) as the parameter. Check its documentation page for examples.
 ///
 /// However, here are three ways you can quickly build a folder.
 ///
@@ -758,7 +758,7 @@ pub trait TupleLike {
 
     /// Pop an element from the back of the tuple.
     ///
-    /// Note: The [`Unit`] type is not [`Popable`].
+    /// Note: The [`Unit`] type is not [`Poppable`].
     ///
     /// # Examples
     ///
@@ -772,14 +772,14 @@ pub trait TupleLike {
     /// ```
     fn pop(self) -> (Self::PopBackOutput, Self::PopBackElement)
     where
-        Self: Popable + Sized,
+        Self: Poppable + Sized,
     {
-        Popable::pop(self)
+        Poppable::pop(self)
     }
 
     /// Pop an element from the front of the tuple.
     ///
-    /// Note: The [`Unit`] type is not [`Popable`].
+    /// Note: The [`Unit`] type is not [`Poppable`].
     ///
     /// # Examples
     ///
@@ -793,19 +793,19 @@ pub trait TupleLike {
     /// ```
     fn pop_front(self) -> (Self::PopFrontOutput, Self::PopFrontElement)
     where
-        Self: Popable + Sized,
+        Self: Poppable + Sized,
     {
-        Popable::pop_front(self)
+        Poppable::pop_front(self)
     }
 
     /// Pop an element from the back of the tuple. Same as [`pop()`](TupleLike::pop()).
     ///
-    /// Note: The [`Unit`] type is not [`Popable`].
+    /// Note: The [`Unit`] type is not [`Poppable`].
     fn pop_back(self) -> (Self::PopBackOutput, Self::PopBackElement)
     where
-        Self: Popable + Sized,
+        Self: Poppable + Sized,
     {
-        Popable::pop_back(self)
+        Poppable::pop_back(self)
     }
 
     /// Left rotates the elements of the tuple.
@@ -937,9 +937,9 @@ pub trait TupleLike {
     /// ```
     fn untuple(self) -> Self::UntupleOutput
     where
-        Self: Untuplable + Sized,
+        Self: Untupleable + Sized,
     {
-        Untuplable::untuple(self)
+        Untupleable::untuple(self)
     }
 
     /// Flatten one level of nesting in the tuple.
@@ -956,9 +956,9 @@ pub trait TupleLike {
     /// ```
     fn flatten(self) -> Self::UntupleOutput
     where
-        Self: Untuplable + Sized,
+        Self: Untupleable + Sized,
     {
-        Untuplable::untuple(self)
+        Untupleable::untuple(self)
     }
 
     /// Traverse the tuple, and collect the output of traversal into a new tuple.
@@ -971,7 +971,7 @@ pub trait TupleLike {
     ///
     /// Tip: [`foreach()`](TupleLike::foreach) traverses elements by their types.
     /// If you are looking for a way to traverse elements by their order, then what you are looking for is to
-    /// [pass a tuple containing callables into `fold()` method](Tuple#fold-tuples-in-order-of-their-elements-but-collecting-results-in-a-tuple).
+    /// [pass a tuple containing callable objects into `fold()` method](Tuple#fold-tuples-in-order-of-their-elements-but-collecting-results-in-a-tuple).
     ///
     /// # Example
     ///
@@ -1243,9 +1243,9 @@ pub trait TupleLike {
     /// ```
     fn replace_head<T>(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced)
     where
-        Self: HeadReplacable<T> + Sized,
+        Self: HeadReplaceable<T> + Sized,
     {
-        HeadReplacable::replace_head(self, rhs)
+        HeadReplaceable::replace_head(self, rhs)
     }
 
     /// Replace the last N elements of the tuple with all elements of another tuple of N elements.
@@ -1263,9 +1263,9 @@ pub trait TupleLike {
     /// ```
     fn replace_tail<T, R>(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced)
     where
-        Self: TailReplacable<T, R> + Sized,
+        Self: TailReplaceable<T, R> + Sized,
     {
-        TailReplacable::replace_tail(self, rhs)
+        TailReplaceable::replace_tail(self, rhs)
     }
 
     /// Replace a sequence of elements in the tuple with all elements of another tuple.
@@ -1393,7 +1393,7 @@ pub trait TupleLike {
     }
 
     /// Convert `Tuple<Wrapper0<T0>, Wrapper1<T1>, ... Wrappern<Tn>>` to `Option<Tuple<T0, T1, ..., Tn>>`,
-    /// when all element types `Wrapper0`, `Wrapper1` ... `Wrappern` implmenet [`Unwrap`].
+    /// when all element types `Wrapper0`, `Wrapper1` ... `Wrappern` implement [`Unwrap`].
     ///
     /// Only available if the `unwrap` feature is enabled (enabled by default).
     ///
@@ -1554,20 +1554,20 @@ where
 ///     // ...
 /// }
 /// ```
-/// 
+///
 /// # Example
-/// 
+///
 /// Use with [`tuple_t!`](crate::tuple_t!) macro to constrain the number of elements of the tuple.
-/// 
+///
 /// ```
 /// use tuplez::{tuple, tuple_t, TupleLenEqTo, TupleLike};
-/// 
+///
 /// fn only_accept_5_elements<T>(_: T)
 /// where
 ///     T: TupleLenEqTo<tuple_t!((); 5)>
 /// {
 /// }
-/// 
+///
 /// let tup4 = tuple!(1, 2.0, "3", 4);
 /// // only_accept_5_elements(tup4);    // Error: the trait bound is not satisfied
 /// let tup5 = tup4.push_back('5');

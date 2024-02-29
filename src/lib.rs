@@ -139,7 +139,7 @@ pub use any_array::*;
 ///
 /// *`[` and `]` only indicate the optional content but not that they need to be input.*
 ///
-/// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
+/// *Similarly, `...` indicates several repeated segments, rather than inputting `...`.*
 ///
 /// # Examples
 ///
@@ -172,7 +172,7 @@ pub use tuplez_macros::tuple;
 ///
 /// *`[` and `]` only indicate the optional content but not that they need to be input.*
 ///
-/// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
+/// *Similarly, `...` indicates several repeated segments, rather than inputting `...`.*
 ///
 /// # Examples
 ///
@@ -201,7 +201,7 @@ pub use tuplez_macros::tuple_t;
 ///
 /// *`[` and `]` only indicate the optional content but not that they need to be input.*
 ///
-/// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
+/// *Similarly, `...` indicates several repeated segments, rather than inputting `...`.*
 ///
 /// # Examples
 ///
@@ -417,7 +417,7 @@ pub use tuplez_macros::split_at;
 ///
 /// *`[` and `]` only indicate the optional content but not that they need to be input.*
 ///
-/// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
+/// *Similarly, `...` indicates several repeated segments, rather than inputting `...`.*
 ///
 /// # Explanation
 ///
@@ -510,7 +510,7 @@ pub use tuplez_macros::mapper;
 ///
 /// *`[` and `]` only indicate the optional content but not that they need to be input.*
 ///
-/// *Similarly, `...` indicates several repeated segments, rather than inputing `...`.*
+/// *Similarly, `...` indicates several repeated segments, rather than inputting `...`.*
 ///
 /// # Explanation
 ///

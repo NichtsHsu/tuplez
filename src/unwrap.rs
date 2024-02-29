@@ -48,7 +48,7 @@ pub trait Unwrap {
 
     /// Check if self contains a value.
     ///
-    /// Soundess requirement: When [`has_value()`](Unwrap::has_value()) returns true, [`unwrap()`](Unwrap::unwrap()) cannot panic.
+    /// Soundness requirement: When [`has_value()`](Unwrap::has_value()) returns true, [`unwrap()`](Unwrap::unwrap()) cannot panic.
     ///
     /// Hint: The [`TupleLike`] trait provides the [`has_value()`](TupleLike::has_value()) method as the wrapper
     /// for this [`has_value()`](Unwrap::has_value()) method.
