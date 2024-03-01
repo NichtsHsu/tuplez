@@ -375,6 +375,84 @@ pub use tuplez_macros::get;
 /// ```
 pub use tuplez_macros::take;
 
+/// Pick some elements from a tuple.
+///
+/// # Syntax
+///
+/// ```text
+/// IndexGroup      = Index [ - Index ]
+///
+/// pick!( Expr ; IndexGroup1 [, IndexGroup2, ...] )
+/// ```
+///
+/// *`[` and `]` only indicate the optional content but not that they need to be input.*
+///
+/// *Similarly, `...` indicates several repeated segments, rather than inputting `...`.*
+///
+/// **The index must be an integer literal** since procedural macros do not yet support evaluating constants.
+///
+/// # Explanation
+///
+/// The `pick!` macro allows you to pick some elements you want from a tuple to a new tuple,
+/// and the unpicked elements will be put into a new tuple.
+///
+/// ```
+/// use tuplez::{pick, tuple};
+///
+/// let tup = tuple!(1, "hello", 3.14, [1, 2, 3], Some(9.8), 'c');
+/// let (picked, unpicked) = pick!(tup; 3, 1, 5);
+/// assert_eq!(picked, tuple!([1, 2, 3], "hello", 'c'));
+/// assert_eq!(unpicked, tuple!(1, 3.14, Some(9.8)));
+/// ```
+///
+/// You can abbreviate the continuous part as `start - end`:
+///
+/// ```
+/// use tuplez::{pick, tuple};
+///
+/// let tup = tuple!(1, "hello", 3.14, [1, 2, 3], Some(9.8), 'c');
+/// let (picked, unpicked) = pick!(tup; 4, 1-3);
+/// assert_eq!(picked, tuple!(Some(9.8), "hello", 3.14, [1, 2, 3]));
+/// assert_eq!(unpicked, tuple!(1, 'c'));
+/// ```
+///
+/// Of course, reverse ranges are also supported:
+///
+/// ```
+/// use tuplez::{pick, tuple};
+///
+/// let tup = tuple!(1, "hello", 3.14, [1, 2, 3], Some(9.8), 'c');
+/// let (picked, unpicked) = pick!(tup; 4, 3-1);    // `3-1` is reverse range
+/// assert_eq!(picked, tuple!(Some(9.8), [1, 2, 3], 3.14, "hello"));
+/// assert_eq!(unpicked, tuple!(1, 'c'));
+/// ```
+///
+/// If Rust's move checker allows it, then you can pick the same element multiple times:
+///
+/// ```
+/// use tuplez::{pick, tuple};
+///
+/// let tup = tuple!(1, "hello", 3.14, [1, 2, 3], Some(9.8), 'c');
+/// let (picked, unpicked) = pick!(tup; 1, 1, 1, 5, 5);
+/// assert_eq!(picked, tuple!("hello", "hello", "hello", 'c', 'c'));
+/// assert_eq!(unpicked, tuple!(1, 3.14, [1, 2, 3], Some(9.8)));
+/// ```
+///
+/// Another common use is when you want to pick references to some elements of the original tuple:
+///
+/// ```
+/// use tuplez::{get, pick, tuple, TupleLike};
+///
+/// let mut tup = tuple!(1, "hello", 3.14, [1, 2, 3], Some(9.8), 'c');
+/// let (picked, _) = pick!(tup.as_mut(); 3, 0);
+/// get!(picked; 0).rotate_left(1);
+/// *get!(picked; 1) += 100;
+/// assert_eq!(tup, tuple!(101, "hello", 3.14, [2, 3, 1], Some(9.8), 'c'));
+/// ```
+///
+/// NOTE: Unlike [`take!`], even if you [`pick!`] only one element, you still get a tuple.
+pub use tuplez_macros::pick;
+
 /// Split the tuple into two tuples at a specific index.
 ///
 /// # Syntax
@@ -611,6 +689,8 @@ pub use tuplez_macros::seq_folder;
 ///
 /// *Similarly, `...` indicates several repeated segments, rather than inputting `...`.*
 ///
+/// **The index must be an integer literal** since procedural macros do not yet support evaluating constants.
+///
 /// # Explanation
 ///
 /// You can pass the elements of the tuple into the function or method in the order you want:
@@ -633,6 +713,17 @@ pub use tuplez_macros::seq_folder;
 ///
 /// let tup = tuple!([1, 2, 3], 2, 3.4, "hello", 9);
 /// apply!(tup => test(1-3, 0));    // `1-3` expands to `1, 2, 3`
+/// ```
+///
+/// And reverse ranges are also supported:
+///
+/// ```
+/// use tuplez::{tuple, apply};
+///
+/// fn test(_: &str, _: f64, _: i32, _: [i32; 3]) {}
+///
+/// let tup = tuple!([1, 2, 3], 2, 3.4, "hello", 9);
+/// apply!(tup => test(3-1, 0));    // `3-1` expands to `3, 2, 1`
 /// ```
 ///
 /// You can add `&` or `&mut` to elements to borrow them. Here is a slightly more complex example:

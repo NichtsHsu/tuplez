@@ -174,6 +174,42 @@ impl Parse for TupleTake {
     }
 }
 
+pub struct TuplePick {
+    pub tup: Expr,
+    pub indexes: Vec<usize>,
+}
+
+impl Parse for TuplePick {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let tup = input.parse()?;
+        let mut indexes = Vec::<usize>::default();
+        let _: Token![;] = input.parse()?;
+        loop {
+            let start: LitInt = input.parse()?;
+            let start: usize = start.base10_parse()?;
+            let mut end = start;
+            if input.peek(Token![-]) {
+                let _: Token![-] = input.parse()?;
+                let end_: LitInt = input.parse()?;
+                end = end_.base10_parse()?;
+            }
+            if input.peek(Token![,]) {
+                let _: Token![,] = input.parse()?;
+            }
+            if start <= end {
+                (start..=end).for_each(|i| indexes.push(i));
+            } else {
+                (end..=start).rev().for_each(|i| indexes.push(i));
+            }
+            if input.is_empty() {
+                break;
+            }
+        }
+
+        Ok(TuplePick { tup, indexes })
+    }
+}
+
 pub enum TupleArg {
     Move(usize),
     Ref(usize),
@@ -181,7 +217,7 @@ pub enum TupleArg {
 }
 
 #[derive(Default)]
-pub struct ArgList(pub VecDeque<TupleArg>);
+pub struct ArgList(pub Vec<TupleArg>);
 
 impl Add for ArgList {
     type Output = Self;
@@ -199,7 +235,7 @@ impl AddAssign for ArgList {
 
 impl Parse for ArgList {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let mut args = VecDeque::new();
+        let mut args = Vec::new();
 
         let mut ctor: fn(usize) -> TupleArg = TupleArg::Move;
         if input.peek(Token![&]) {
@@ -219,7 +255,11 @@ impl Parse for ArgList {
             let end_: LitInt = input.parse()?;
             end = end_.base10_parse()?;
         }
-        (start..=end).for_each(|i| args.push_back(ctor(i)));
+        if start <= end {
+            (start..=end).for_each(|i| args.push(ctor(i)));
+        } else {
+            (end..=start).rev().for_each(|i| args.push(ctor(i)));
+        }
 
         Ok(ArgList(args))
     }

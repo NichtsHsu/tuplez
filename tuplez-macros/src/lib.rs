@@ -92,6 +92,43 @@ pub fn take(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
+pub fn pick(input: TokenStream) -> TokenStream {
+    let TuplePick { tup, indexes } = parse_macro_input!(input as TuplePick);
+    let tup = quote!( let tup_ = #tup );
+    let max = *indexes.iter().max().unwrap();
+    let unpicked_indexes = (0..max).filter(|i| !indexes.contains(i));
+    let field = quote!(. 1);
+    let picked = indexes
+        .iter()
+        .map(|x| {
+            let fields = vec![field.clone(); *x];
+            quote!( tup_ #(#fields)* .0 )
+        })
+        .rfold(
+            quote!(tuplez::Unit),
+            |packed, token| quote!( tuplez::Tuple( #token, #packed ) ),
+        );
+    let tail = {
+        let fields = vec![field.clone(); max];
+        quote!( tup_ #(#fields)* .1 )
+    };
+    let unpicked = unpicked_indexes
+        .map(|x| {
+            let fields = vec![field.clone(); x];
+            quote!( tup_ #(#fields)* .0 )
+        })
+        .rfold(
+            tail,
+            |packed, token| quote!( tuplez::Tuple( #token, #packed ) ),
+        );
+    quote!({
+        #tup ;
+        ( #picked, #unpicked )
+    })
+    .into()
+}
+
+#[proc_macro]
 pub fn split_at(input: TokenStream) -> TokenStream {
     let TupleIndex { tup, index } = parse_macro_input!(input as TupleIndex);
     let tup = quote!( let tup_ = #tup );
@@ -108,6 +145,11 @@ pub fn split_at(input: TokenStream) -> TokenStream {
         ( #unpack, #other )
     })
     .into()
+}
+
+#[proc_macro]
+pub fn swap_at(input: TokenStream) -> TokenStream {
+    quote!().into()
 }
 
 #[proc_macro]
