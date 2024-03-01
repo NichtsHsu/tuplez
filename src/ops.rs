@@ -177,7 +177,8 @@ where
     }
 }
 
-/// Make `tuple!(&[mut] a, &[mut] b, &[mut] c, ...)` to `tuple!(a, b, c, ...)` by cloning its elements.
+/// Make [`tuple!(&[mut] a, &[mut] b, &[mut] c, ...)`](crate::tuple!)
+/// to [`tuple!(a, b, c, ...)`](crate::tuple!) by cloning its elements.
 pub trait Cloned: TupleLike {
     /// The type of the output tuple.
     type ClonedOutput: TupleLike;
@@ -229,7 +230,8 @@ where
     }
 }
 
-/// Make `tuple!(&[mut] a, &[mut] b, &[mut] c, ...)` to `tuple!(a, b, c, ...)` by cloning its elements.
+/// Make [`tuple!(&[mut] a, &[mut] b, &[mut] c, ...)`](crate::tuple!) to
+/// [`tuple!(a, b, c, ...)`](crate::tuple!) by cloning its elements.
 ///
 /// Much like [`Cloned`], but allows dynamic sized types.
 pub trait Owned: TupleLike {
@@ -285,7 +287,8 @@ where
     }
 }
 
-/// Make `tuple!(&[mut] a, &[mut] b, &[mut] c, ...)` to `tuple!(a, b, c, ...)` by copying its elements.
+/// Make [`tuple!(&[mut] a, &[mut] b, &[mut] c, ...)`](crate::tuple!) to
+/// [`tuple!(a, b, c, ...)`](crate::tuple!) by copying its elements.
 pub trait Copied: TupleLike {
     /// The type of the output tuple.
     type CopiedOutput: TupleLike;
@@ -974,7 +977,7 @@ where
     }
 }
 
-/// When all elements implement `FnOnce(T)` for a specific `T`, call them once in sequence.
+/// When all elements implement [`FnOnce(T)`](std::ops::FnOnce) for a specific `T`, call them once in sequence.
 pub trait OnceCallable<T, P>: TupleLike {
     /// Type of the tuple collecting results of each call.
     type Output: TupleLike;
