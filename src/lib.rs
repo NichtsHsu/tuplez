@@ -663,6 +663,7 @@ pub use tuplez_macros::seq_folder;
 ///
 /// ```
 /// use tuplez::{tuple, apply};
+///
 /// fn push(v: &mut Vec<i32>, x: i32) {
 ///     v.push(x)
 /// }
@@ -674,4 +675,15 @@ pub use tuplez_macros::seq_folder;
 ///
 /// It is worth mentioning that the input tuple can be any expression.
 /// The `&tup` and the `&mut tup` are just two of the many possible inputs.
+///
+/// You can use the same element multiple times as long as Rust's move checker and borrow checker allow it:
+///
+/// ```
+/// use tuplez::{tuple, apply};
+///
+/// fn test(_: i32, _: i32, _: i32, _: &i32, _: &i32, _: &mut i32) {}
+///
+/// let tup = tuple!(1, 2, 3);
+/// apply!(tup => test(0-2, &1-2, &mut 0));
+/// ```
 pub use tuplez_macros::apply;

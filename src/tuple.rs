@@ -328,6 +328,9 @@ pub struct Unit;
 /// assert_eq!(tuple!((); 10).fib(), vec![1, 1, 2, 3, 5, 8, 13, 21, 34, 55]);
 /// ```
 ///
+/// If you're looking for more complex examples, then the [source code of tuplez](https://github.com/NichtsHsu/tuplez)
+/// is a good place to start.
+///
 /// # Traverse tuples
 ///
 /// You can traverse tuples by [`foreach()`](TupleLike::foreach()).
@@ -1399,7 +1402,8 @@ pub trait TupleLike {
         OnceCallable::call_once(self, rhs)
     }
 
-    /// Get the contained value.
+    /// Convert `Tuple<Wrapper0<T0>, Wrapper1<T1>, ... Wrappern<Tn>>` to `Tuple<T0, T1, ..., Tn>`,
+    /// when all element types `Wrapper0`, `Wrapper1` ... `Wrappern` implement [`Unwrap`].
     ///
     /// Only available if the `unwrap` feature is enabled (enabled by default).
     ///
@@ -1409,7 +1413,7 @@ pub trait TupleLike {
     ///
     /// # Panic
     ///
-    /// Panic if self does not contain a value.
+    /// Panic if any element does not contain a value.
     ///
     /// # Example
     ///
@@ -1427,8 +1431,7 @@ pub trait TupleLike {
         Unwrap::unwrap(self)
     }
 
-    /// Check if self contains a value.
-    /// It usually indicates whether the tuple can safely [`unwrap()`](TupleLike::unwrap())
+    /// Check if self can be safely [`unwrap()`](TupleLike::unwrap()).
     ///
     /// Only available if the `unwrap` feature is enabled (enabled by default).
     ///
@@ -1448,7 +1451,11 @@ pub trait TupleLike {
         Unwrap::has_value(self)
     }
 
-    /// Get the contained value, or the default value if self does not contain a value.
+    /// Convert `Tuple<Wrapper0<T0>, Wrapper1<T1>, ... Wrappern<Tn>>` to `Tuple<T0, T1, ..., Tn>`,
+    /// when all element types `Wrapper0`, `Wrapper1` ... `Wrappern` implement [`UnwrapOrDefault`].
+    ///
+    /// Unlike [`unwrap()`](TupleLike::unwrap()), if an element does not contain a value, use the
+    /// default value instead of panic.
     ///
     /// Only available if the `unwrap` feature is enabled (enabled by default).
     ///
