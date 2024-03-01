@@ -176,13 +176,13 @@ impl Parse for TupleTake {
 
 pub struct TuplePick {
     pub tup: Expr,
-    pub indexes: Vec<usize>,
+    pub indices: Vec<usize>,
 }
 
 impl Parse for TuplePick {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let tup = input.parse()?;
-        let mut indexes = Vec::<usize>::default();
+        let mut indices = Vec::<usize>::default();
         let _: Token![;] = input.parse()?;
         loop {
             let start: LitInt = input.parse()?;
@@ -197,16 +197,16 @@ impl Parse for TuplePick {
                 let _: Token![,] = input.parse()?;
             }
             if start <= end {
-                (start..=end).for_each(|i| indexes.push(i));
+                (start..=end).for_each(|i| indices.push(i));
             } else {
-                (end..=start).rev().for_each(|i| indexes.push(i));
+                (end..=start).rev().for_each(|i| indices.push(i));
             }
             if input.is_empty() {
                 break;
             }
         }
 
-        Ok(TuplePick { tup, indexes })
+        Ok(TuplePick { tup, indices })
     }
 }
 
@@ -262,6 +262,60 @@ impl Parse for ArgList {
         }
 
         Ok(ArgList(args))
+    }
+}
+
+pub struct TupleSwap {
+    pub tup: Expr,
+    pub left: Vec<usize>,
+    pub right: Vec<usize>,
+}
+
+impl Parse for TupleSwap {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let tup = input.parse()?;
+        let mut left = vec![];
+        let mut right = vec![];
+        let _: Token![;] = input.parse()?;
+
+        let left_start: LitInt = input.parse()?;
+        let left_start: usize = left_start.base10_parse()?;
+        let mut left_end = left_start;
+        if input.peek(Token![-]) {
+            let _: Token![-] = input.parse()?;
+            let end: LitInt = input.parse()?;
+            left_end = end.base10_parse()?;
+        }
+        if left_start <= left_end {
+            (left_start..=left_end).for_each(|i| left.push(i));
+        } else {
+            (left_end..=left_start).rev().for_each(|i| left.push(i));
+        }
+
+        let _: Token![,] = input.parse()?;
+
+        let right_start: LitInt = input.parse()?;
+        let right_start: usize = right_start.base10_parse()?;
+        let mut right_end = right_start;
+        if input.peek(Token![-]) {
+            let _: Token![-] = input.parse()?;
+            let end: LitInt = input.parse()?;
+            right_end = end.base10_parse()?;
+        }
+        if right_start <= right_end {
+            (right_start..=right_end).for_each(|i| right.push(i));
+        } else {
+            (right_end..=right_start).rev().for_each(|i| right.push(i));
+        }
+
+        if left.len() != right.len() {
+            return Err(input.error("Indices groups must be of equal length"));
+        }
+
+        if left.iter().any(|i| right.contains(i)) {
+            return Err(input.error("Indices overlap"));
+        }
+        Ok(TupleSwap { tup, left, right })
     }
 }
 

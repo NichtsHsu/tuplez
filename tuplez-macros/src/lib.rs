@@ -93,12 +93,12 @@ pub fn take(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn pick(input: TokenStream) -> TokenStream {
-    let TuplePick { tup, indexes } = parse_macro_input!(input as TuplePick);
+    let TuplePick { tup, indices } = parse_macro_input!(input as TuplePick);
     let tup = quote!( let tup_ = #tup );
-    let max = *indexes.iter().max().unwrap();
-    let unpicked_indexes = (0..max).filter(|i| !indexes.contains(i));
+    let max = *indices.iter().max().unwrap();
+    let unpicked_indices = (0..max).filter(|i| !indices.contains(i));
     let field = quote!(. 1);
-    let picked = indexes
+    let picked = indices
         .iter()
         .map(|x| {
             let fields = vec![field.clone(); *x];
@@ -112,7 +112,7 @@ pub fn pick(input: TokenStream) -> TokenStream {
         let fields = vec![field.clone(); max];
         quote!( tup_ #(#fields)* .1 )
     };
-    let unpicked = unpicked_indexes
+    let unpicked = unpicked_indices
         .map(|x| {
             let fields = vec![field.clone(); x];
             quote!( tup_ #(#fields)* .0 )
@@ -149,7 +149,34 @@ pub fn split_at(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn swap_at(input: TokenStream) -> TokenStream {
-    quote!().into()
+    let TupleSwap { tup, left, right } = parse_macro_input!(input as TupleSwap);
+    let tup = quote!( let mut tup_ = #tup );
+    let field = quote!(. 1);
+    let max = std::cmp::max(*left.iter().max().unwrap(), *right.iter().max().unwrap());
+    let mut indices: Vec<usize> = (0..=max).collect();
+    for i in 0..left.len() {
+        indices.swap(left[i], right[i]);
+    }
+    let tail = {
+        let fields = vec![field.clone(); max];
+        quote!( tup_ #(#fields)* .1 )
+    };
+    let output = indices
+        .into_iter()
+        .map(|x| {
+            let fields = vec![field.clone(); x];
+            quote!( tup_ #(#fields)* .0 )
+        })
+        .rfold(
+            tail,
+            |packed, token| quote!( tuplez::Tuple( #token, #packed ) ),
+        );
+
+    quote!({
+        #tup ;
+        #output
+    })
+    .into()
 }
 
 #[proc_macro]

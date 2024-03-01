@@ -342,7 +342,7 @@ pub use tuplez_macros::get;
 ///
 /// # Examples
 ///
-/// Use indexes:
+/// Use indices:
 ///
 /// ```
 /// use tuplez::{take, tuple};
@@ -380,9 +380,9 @@ pub use tuplez_macros::take;
 /// # Syntax
 ///
 /// ```text
-/// IndexGroup      = Index [ - Index ]
+/// IndicesGroup      = Index [ - Index ]
 ///
-/// pick!( Expr ; IndexGroup1 [, IndexGroup2, ...] )
+/// pick!(Expr; IndicesGroup1 [, IndicesGroup2, ...] )
 /// ```
 ///
 /// *`[` and `]` only indicate the optional content but not that they need to be input.*
@@ -481,6 +481,54 @@ pub use tuplez_macros::pick;
 /// assert_eq!(right, tuple!());
 /// ```
 pub use tuplez_macros::split_at;
+
+/// Swap two parts of a tuple.
+///
+/// # Syntax
+///
+/// ```text
+/// IndicesGroup      = Index [ - Index ]
+///
+/// swap_at!(Expr; IndicesGroup1 , IndicesGroup2 )
+/// ```
+///
+/// *`[` and `]` only indicate the optional content but not that they need to be input.*
+///
+/// **The index must be an integer literal** since procedural macros do not yet support evaluating constants.
+///
+/// # Explanation
+///
+/// You can swap two elements of a tuple, then generating a new tuple:
+///
+/// ```
+/// use tuplez::{swap_at, tuple};
+///
+/// let tup = tuple!(1, "2", 3.14, [1, 2, 3], Some(9.8), 'c', 14);
+/// let tup2 = swap_at!(tup; 0, 4);
+/// assert_eq!(tup2, tuple!(Some(9.8), "2", 3.14, [1, 2, 3], 1, 'c', 14));
+/// ```
+///
+/// You can also specify a continuous range of elements via `start - end`,
+/// but the number of elements on both sides must be equal:
+///
+/// ```
+/// use tuplez::{swap_at, tuple};
+///
+/// let tup = tuple!(1, "2", 3.14, [1, 2, 3], Some(9.8), 'c', 14);
+/// let tup2 = swap_at!(tup; 0-2, 3-5);
+/// assert_eq!(tup2, tuple!([1, 2, 3], Some(9.8), 'c', 1, "2", 3.14, 14));
+/// ```
+///
+/// Of course, reverse ranges are also supported:
+///
+/// ```
+/// use tuplez::{swap_at, tuple};
+///
+/// let tup = tuple!(1, "2", 3.14, [1, 2, 3], Some(9.8), 'c', 14);
+/// let tup2 = swap_at!(tup; 0-2, 5-3);
+/// assert_eq!(tup2, tuple!('c', Some(9.8), [1, 2, 3], 3.14, "2", 1, 14));
+/// ```
+pub use tuplez_macros::swap_at;
 
 /// Provides a simple way to build a functor that implements [`Mapper`](crate::foreach::Mapper).
 ///
