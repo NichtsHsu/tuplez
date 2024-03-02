@@ -728,7 +728,7 @@ pub use tuplez_macros::seq_folder;
 /// # Syntax
 ///
 /// ```text
-/// ArgsGroup   = Index [ - Index ]
+/// ArgsGroup   = [ & [mut] ] Index [ - Index ]
 ///
 /// apply!( Expr => Func ( [ArgsGroup1, ArgsGroup2, ...] ) )
 /// ```
