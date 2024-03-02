@@ -331,20 +331,14 @@ impl Parse for TupleApply {
         let _: Token![=>] = input.parse()?;
         let mut func: Expr = input.parse()?;
 
-        let args;
-        match &mut func {
-            Expr::Call(call) => {
-                args = std::mem::take(&mut call.args);
-            }
-            Expr::MethodCall(call) => {
-                args = std::mem::take(&mut call.args);
-            }
+        let args = match &mut func {
+            Expr::Call(call) => std::mem::take(&mut call.args),
+            Expr::MethodCall(call) => std::mem::take(&mut call.args),
             _ => return Err(input.error("expected function call")),
         }
-        let args = args
-            .into_iter()
-            .map(|arg| syn::parse2::<ArgList>(arg.into_token_stream()))
-            .try_fold(ArgList::default(), |acc, x| x.and_then(|x| Ok(acc + x)))?;
+        .into_iter()
+        .map(|arg| syn::parse2::<ArgList>(arg.into_token_stream()))
+        .try_fold(ArgList::default(), |acc, x| x.map(|x| acc + x))?;
 
         Ok(TupleApply { tup, func, args })
     }
