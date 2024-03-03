@@ -611,7 +611,7 @@ pub use tuplez_macros::swap_at;
 /// use tuplez::{mapper, tuple, TupleLike};
 ///
 /// let mut tup = tuple!(1, "hello", Some(3.14));
-/// let tup2 = tup.as_ref().foreach(mapper!{
+/// let tup2 = tup.as_ref().foreach(mapper! {
 ///     |x: &i32| -> i32 { *x + 1 }
 ///     <T: ToString> |x: &Option<T>| -> String { x.as_ref().unwrap().to_string() }
 ///     <'a> |x: &&'a str| -> &'a [u8] { x.as_bytes() }
@@ -619,7 +619,7 @@ pub use tuplez_macros::swap_at;
 /// assert_eq!(tup2, tuple!(2, b"hello" as &[u8], "3.14".to_string()));
 /// assert_eq!(tup, tuple!(1, "hello", Some(3.14)));  // And the original tuple is not consumed
 ///
-/// _ = tup.as_mut().foreach(mapper!{
+/// _ = tup.as_mut().foreach(mapper! {
 ///     |x: &mut i32| -> () { *x += 1; }
 ///     <T: ToString> |x: &mut Option<T>| -> () { x.take(); }
 ///     |x: &mut &str| -> () { *x = "world" }
@@ -679,7 +679,7 @@ pub use tuplez_macros::mapper;
 ///
 /// let tup = tuple!(1, "2", 3.0);
 /// let result = tup.fold(
-///     folder!{i32;        // Annotate the accumulation value type
+///     folder! {i32;        // Annotate the accumulation value type
 ///         |acc, x: i32| { acc + x }
 ///         |acc, x: f32| { acc + (x as i32) }
 ///         // `str` is a DST, so `?Sized` bound is required.
@@ -837,7 +837,7 @@ pub use tuplez_macros::apply;
 ///
 /// let tup = tuple!(1, "2", |x: i32| x >= 0);
 /// let result = tup.all(
-///     unary_pred!{
+///     unary_pred! {
 ///         |x: i32| { *x >= 0 }
 ///         |x: &str| { !x.is_empty() }
 ///         <T: Fn(i32) -> bool> |f: T| { f(1) }

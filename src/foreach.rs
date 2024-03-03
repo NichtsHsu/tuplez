@@ -30,7 +30,7 @@ use crate::{Tuple, TupleLike, Unit};
 /// ```
 /// use tuplez::{mapper, tuple, TupleLike};
 ///
-/// let tup = tuple!(1, "hello", 3.14).foreach(mapper!{
+/// let tup = tuple!(1, "hello", 3.14).foreach(mapper! {
 ///     |x: i32| -> i64 { x as i64 }
 ///     |x: f32| -> String { x.to_string() }
 ///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
@@ -42,8 +42,7 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// You can create a new tuple with the same number of elements, whose elements are all callable objects that accepts an element
 /// and returns another value ([`FnOnce(T) -> U`](std::ops::FnOnce)), then, you can use that tuple as a mapper.
-///
-/// The outputs will be collected into a tuple:
+
 ///
 /// ```
 /// use tuplez::{tuple, TupleLike};
@@ -148,7 +147,7 @@ pub trait Foreach<F>: TupleLike {
     /// ```
     /// use tuplez::{mapper, tuple, TupleLike};
     ///
-    /// let tup = tuple!(1, "hello", 3.14).foreach(mapper!{
+    /// let tup = tuple!(1, "hello", 3.14).foreach(mapper! {
     ///     |x: i32| -> i64 { x as i64 }
     ///     |x: f32| -> String { x.to_string() }
     ///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }

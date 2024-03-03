@@ -354,7 +354,7 @@ pub struct Unit;
 /// ```
 /// use tuplez::{mapper, tuple, TupleLike};
 ///
-/// let tup = tuple!(1, "hello", 3.14).foreach(mapper!{
+/// let tup = tuple!(1, "hello", 3.14).foreach(mapper! {
 ///     |x: i32| -> i64 { x as i64 }
 ///     |x: f32| -> String { x.to_string() }
 ///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
@@ -981,7 +981,7 @@ pub trait TupleLike {
     /// ```
     /// use tuplez::{mapper, tuple, TupleLike};
     ///
-    /// let tup = tuple!(1, "hello", 3.14).foreach(mapper!{
+    /// let tup = tuple!(1, "hello", 3.14).foreach(mapper! {
     ///     |x: i32| -> i64 { x as i64 }
     ///     |x: f32| -> String { x.to_string() }
     ///     <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
@@ -1040,7 +1040,7 @@ pub trait TupleLike {
     /// ```
     /// use tuplez::{unary_pred, tuple, TupleLike};
     ///
-    /// let predicate = unary_pred!{
+    /// let predicate = unary_pred! {
     ///     |x: i32| { (0..10).contains(x) },
     ///     |x: &str| { x.parse::<i32>().is_ok() },
     /// };
@@ -1075,7 +1075,7 @@ pub trait TupleLike {
     /// ```
     /// use tuplez::{unary_pred, tuple, TupleLike};
     ///
-    /// let predicate = unary_pred!{
+    /// let predicate = unary_pred! {
     ///     |x: i32| { (0..10).contains(x) },
     ///     |x: &str| { x.parse::<i32>().is_ok() },
     /// };

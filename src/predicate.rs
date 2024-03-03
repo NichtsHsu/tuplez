@@ -24,7 +24,7 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// let tup = tuple!(1, "2", |x: i32| x >= 0);
 /// let result = tup.all(
-///     unary_pred!{
+///     unary_pred! {
 ///         |x: i32| { *x >= 0 }
 ///         |x: &str| { !x.is_empty() }
 ///         <T: Fn(i32) -> bool> |f: T| { f(1) }
@@ -45,7 +45,7 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// let tup = tuple!(1, 2, "3");
 /// let result = tup.any(
-///     tuple!{
+///     tuple! {
 ///         |x: &i32| *x < 0,
 ///         |x: &i32| *x > 100,
 ///         |x: &&str| *x == "1",
@@ -140,7 +140,7 @@ pub trait TestAny<Pred>: TupleLike {
     /// ```
     /// use tuplez::{unary_pred, tuple, TupleLike};
     ///
-    /// let predicate = unary_pred!{
+    /// let predicate = unary_pred! {
     ///     |x: i32| { (0..10).contains(x) },
     ///     |x: &str| { x.parse::<i32>().is_ok() },
     /// };
@@ -201,7 +201,7 @@ pub trait TestAll<Pred>: TupleLike {
     /// ```
     /// use tuplez::{unary_pred, tuple, TupleLike};
     ///
-    /// let predicate = unary_pred!{
+    /// let predicate = unary_pred! {
     ///     |x: i32| { (0..10).contains(x) },
     ///     |x: &str| { x.parse::<i32>().is_ok() },
     /// };

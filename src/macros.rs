@@ -1,6 +1,6 @@
 macro_rules! __from_primitive {
     ($tup:ident; $($v:ident)*) => {{
-        paste::paste!{
+        paste::paste! {
             let ($([< $v:lower >],)*) = $tup;
             $crate::tuple!($([< $v:lower  >]),*)
         }
@@ -10,7 +10,7 @@ macro_rules! __from_primitive {
 macro_rules! __to_primitive {
     ($tup:ident $(;)?) => { () };
     ($tup:ident; $($v:ident)+) => {{
-        paste::paste!{
+        paste::paste! {
             let $crate::macros::__to_primitive!(@expand $([< $v:lower >])+) = $tup;
             ($([< $v:lower >],)+)
         }
@@ -25,7 +25,7 @@ macro_rules! __to_primitive {
 
 macro_rules! __from_array {
     ($arr:ident; $($v:ident)*) => {{
-        paste::paste!{
+        paste::paste! {
             let [$([< $v:lower >],)*] = $arr;
             $crate::tuple!($([< $v:lower  >]),*)
         }
@@ -34,7 +34,7 @@ macro_rules! __from_array {
 
 macro_rules! __to_array {
     ($tup:ident; $($v:ident)+) => {{
-        paste::paste!{
+        paste::paste! {
             let $crate::macros::__to_primitive!(@expand $([< $v:lower >])+) = $tup;
             [ $([< $v:lower >],)+ ]
         }
@@ -96,7 +96,7 @@ macro_rules! __tuple_traits_impl {
         }
 
         #[cfg(not(feature = "any_array"))]
-        $crate::macros::__tuple_array_impl!{ $cnt; $($ts)* }
+        $crate::macros::__tuple_array_impl! { $cnt; $($ts)* }
     };
 }
 
