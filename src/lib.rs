@@ -155,7 +155,7 @@ pub use any_array::*;
 /// assert_eq!(unit, Unit);
 /// ```
 ///
-/// Remember that macros do not directly evaluate expressions, so:
+/// Remember that the [`tuple!`] macro does not directly evaluate expressions, so:
 ///
 /// ```
 /// use tuplez::tuple;
