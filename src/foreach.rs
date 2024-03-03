@@ -92,7 +92,7 @@ pub trait Mapper<T> {
 ///
 /// # The Functor `F`
 ///
-/// For traversing [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to construct a custom functor type,
+/// For traversing [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to build a functor,
 /// which needs to implement [`Mapper<T0>`], [`Mapper<T1>`] ... [`Mapper<Tn>`].
 ///
 /// See the documentation page of [`Mapper`] for details.

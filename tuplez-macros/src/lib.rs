@@ -307,3 +307,41 @@ pub fn seq_folder(input: TokenStream) -> TokenStream {
     }
     unpack.into()
 }
+
+#[proc_macro]
+pub fn unary_pred(input: TokenStream) -> TokenStream {
+    let UnaryPredicate(rules) = parse_macro_input!(input as UnaryPredicate);
+    let rules = rules.into_iter().map(
+        |Rule {
+             generic,
+             mut inputs,
+             output_type,
+             body,
+         }| {
+            let (x, tyx, mutx) = inputs.pop_front().unwrap();
+            let tyx = tyx.unwrap();
+            let mutx = if mutx { quote!(mut) } else { quote!() };
+            let tyout = output_type.unwrap();
+
+            quote!(
+                impl #generic UnaryPredicate<#tyx> for __UnaryPred {
+                    type NextUnaryPredicate = Self;
+                    fn test(self, testee: & #tyx) -> (bool, Self::NextUnaryPredicate) {
+                        let f = | #mutx #x : & #tyx | -> #tyout #body;
+                        (f(testee), self)
+                    }
+                }
+            )
+        },
+    );
+    quote!(
+        {
+            use ::tuplez::predicate::UnaryPredicate;
+            #[derive(Copy, Clone, Debug)]
+            struct __UnaryPred;
+            #(#rules)*
+            __UnaryPred
+        }
+    )
+    .into()
+}

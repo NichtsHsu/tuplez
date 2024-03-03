@@ -65,7 +65,7 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// ## Fold tuples in order of their elements, but collecting results in a tuple
 ///
-/// You can create a new tuple with the same number of elements, whose elements are all callable ([`FnOnce`]),
+/// You can create a new tuple with the same number of elements, whose elements are all callable objects([`FnOnce`]),
 /// then, you can use that tuple as a folder.
 ///
 /// The outputs will be collected into a tuple:
@@ -132,7 +132,7 @@ pub trait Folder<T, Acc> {
 ///
 /// # The folder `F`
 ///
-/// For folding [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to construct a custom folder type,
+/// For folding [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to build a folder,
 /// which needs to implement [`Folder<T0, Acc>`], and the [`NextFolder`](Folder::NextFolder)
 /// needs to implement [`Folder<T1, <F as Folder<T0, Acc>>::Output>`](Folder), and so on.
 ///
@@ -144,7 +144,7 @@ pub trait Foldable<F, Acc>: TupleLike {
     /// Fold the tuple.
     ///
     /// Check out [`Folder`]'s documentation page to learn how to build
-    /// a folder that can be passed to [`foreach()`](TupleLike::foreach()).
+    /// a folder that can be passed to [`fold()`](Foldable::fold()).
     ///
     /// NOTE: Fold a tuple will consume it. If this is not what you want, call [`as_ref()`](TupleLike::as_ref())
     /// or [`as_mut()`](TupleLike::as_mut()) to create a new tuple that references its all members before folding.

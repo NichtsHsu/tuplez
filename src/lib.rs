@@ -117,6 +117,7 @@ pub mod fold;
 pub mod foreach;
 mod macros;
 pub mod ops;
+pub mod predicate;
 pub mod search;
 mod tuple;
 
@@ -553,6 +554,8 @@ pub use tuplez_macros::swap_at;
 /// |x: i32| -> i64 { x as i64 }
 /// ```
 ///
+/// Note that it's just like but not really a closure, so you can't capture context variables.
+///
 /// Also supports adding `mut`:
 ///
 /// ```text
@@ -648,7 +651,9 @@ pub use tuplez_macros::mapper;
 /// |acc, x: i32| { acc + x }
 /// ```
 ///
-/// NOTE: You'd better not annotate types for the accumulation value and return value,
+/// Note that it's just like but not really a closure, so you can't capture context variables.
+///
+/// You'd better not annotate types for the accumulation value and return value,
 /// because they must to be annotated uniformly. Of course you can do that,
 /// but there would be no advantage other than potential compilation errors.
 ///
@@ -666,7 +671,7 @@ pub use tuplez_macros::mapper;
 ///
 /// You need to determine the type of the accumulation value, for example, `i32`.
 /// Then, construct folding rules for all element types in the tuple,
-/// and then combine them in the [`folder!`](crate::folder!) macro to folding the tuple:
+/// and then combine them in the [`folder!`](crate::folder!) macro to fold the tuple:
 ///
 /// ```
 /// use std::convert::AsRef;
@@ -704,6 +709,7 @@ pub use tuplez_macros::folder;
 /// 1. You cannot introduce generic types and lifetimes like [`folder!`].
 /// 2. You don't need to add braces for closures that only have a single expression, but instead you
 /// need to add commas between closures to separate them.
+/// 3. You can capture context variables.
 ///
 /// For example:
 ///
@@ -826,3 +832,55 @@ pub use tuplez_macros::seq_folder;
 /// apply!(tup => test(0-2, &1-2, &mut 0));
 /// ```
 pub use tuplez_macros::apply;
+
+/// Provides a simple way to build a unary predicate that implements [`UnaryPredicate`](crate::predicate::UnaryPredicate).
+///
+/// # Syntax
+///
+/// ```text
+/// Generic = [Lifetime1, Lifetime2, ...] [Type1 [: Bound1], Type2 [: Bound2], ...]
+/// Rule    = [ < Generic > ] | Variable : InputType | { Body } [,] [;]
+///
+/// unary_pred!( OutputType; [Rule1 Rule2 ... ] )
+/// ```
+///
+/// # Explanation
+///
+/// A unary predicate rule is much like a closure, except that it must annotate the element type,
+/// and what you actually get is the immutable reference to the element rather than itself.
+///
+/// ```text
+/// |x: i32| { *x > 10 }    // The actual type of `x` is `&i32` not `i32`
+/// ```
+///
+/// Note that it's just like but not really a closure, so you can't capture context variables.
+///
+/// You'd better not annotate types for the return value of rules,
+/// because they must return a `bool` value. Of course you can do that,
+/// but there would be no advantage other than potential compilation errors.
+///
+/// You can also introduce generic types like this:
+///
+/// ```text
+/// <T: Fn(i32) -> bool> |f: T| { f(1) }
+/// ```
+///
+/// Construct unary predicate rules for all element types in the tuple,
+/// and then combine them in the [`unary_pred!`](crate::unary_pred!) macro to test the tuple:
+///
+/// ```
+/// use tuplez::{unary_pred, tuple, TupleLike};
+///
+/// let tup = tuple!(1, "2", |x: i32| x >= 0);
+/// let result = tup.all(
+///     unary_pred!{
+///         |x: i32| { *x >= 0 }
+///         |x: &str| { !x.is_empty() }
+///         <T: Fn(i32) -> bool> |f: T| { f(1) }
+///     }
+/// );
+/// assert_eq!(result, true);
+/// ```
+///
+/// It is allowed to add commas or semicolons as separators between rules. Sometimes this may look better.
+pub use tuplez_macros::unary_pred;

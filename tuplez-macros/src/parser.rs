@@ -3,7 +3,7 @@ use std::{
     ops::{Add, AddAssign},
 };
 
-use quote::ToTokens;
+use quote::{quote, ToTokens};
 use syn::{parse::Parse, Expr, ExprBlock, Generics, Ident, LitInt, Pat, Token, Type};
 
 pub struct TupleGen(pub Vec<Expr>);
@@ -456,5 +456,30 @@ impl Parse for Folder {
             r.output_type.get_or_insert(acc_type.clone());
         }
         Ok(Folder(rules))
+    }
+}
+
+pub struct UnaryPredicate(pub Vec<Rule>);
+
+impl Parse for UnaryPredicate {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut rules: Vec<Rule> = vec![];
+        loop {
+            if input.is_empty() {
+                break;
+            }
+            rules.push(input.parse()?);
+        }
+        let bool_ty = syn::parse2::<Type>(quote!(bool))?;
+        for r in &mut rules {
+            if r.inputs.len() != 1 {
+                return Err(input.error("expected exactly one parameter"));
+            }
+            if r.inputs[0].1.is_none() {
+                return Err(input.error("expected type annotation for the parameter"));
+            }
+            r.output_type.get_or_insert(bool_ty.clone());
+        }
+        Ok(UnaryPredicate(rules))
     }
 }

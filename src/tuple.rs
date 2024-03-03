@@ -1,6 +1,8 @@
 #[cfg(feature = "unwrap")]
 use crate::unwrap::*;
-use crate::{fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*, search::*};
+use crate::{
+    fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*, predicate::*, search::*,
+};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::ops::{
@@ -988,11 +990,11 @@ pub trait TupleLike {
     /// });
     /// assert_eq!(tup, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
     /// ```
-    fn foreach<F>(self, f: &mut F) -> <Self as Foreach<F>>::Output
+    fn foreach<F>(self, functor: &mut F) -> <Self as Foreach<F>>::Output
     where
         Self: Foreach<F> + Sized,
     {
-        Foreach::foreach(self, f)
+        Foreach::foreach(self, functor)
     }
 
     /// Fold the tuple.
@@ -1018,11 +1020,81 @@ pub trait TupleLike {
     /// );
     /// assert_eq!(result, "123".to_string());
     /// ```
-    fn fold<F, Acc>(self, f: F, acc: Acc) -> <Self as Foldable<F, Acc>>::Output
+    fn fold<F, Acc>(self, folder: F, acc: Acc) -> <Self as Foldable<F, Acc>>::Output
     where
         Self: Foldable<F, Acc> + Sized,
     {
-        Foldable::fold(self, f, acc)
+        Foldable::fold(self, folder, acc)
+    }
+
+    /// Tests if any element of the tuple matches a predicate.
+    ///
+    /// Check out [`UnaryPredicate`]'s documentation page to learn how to build
+    /// a unary predicate that can be passed to [`any()`](TupleLike::any()).
+    ///
+    /// [`any()`](TupleLike::any()) is short-circuiting; in other words, it will stop processing as soon as it finds a `true`,
+    /// given that no matter what else happens, the result will also be `true`.
+    ///
+    /// An empty tuple returns `false`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{unary_pred, tuple, TupleLike};
+    ///
+    /// let predicate = unary_pred!{
+    ///     |x: i32| { (0..10).contains(x) },
+    ///     |x: &str| { x.parse::<i32>().is_ok() },
+    /// };
+    ///
+    /// let tup = tuple!(100, 2, "world");
+    /// let result = tup.any(predicate);
+    /// assert_eq!(result, true);
+    ///
+    /// let tup = tuple!(-1, 96, "hello");
+    /// let result = tup.any(predicate);
+    /// assert_eq!(result, false);
+    /// ```
+    fn any<Pred>(&self, predicate: Pred) -> bool
+    where
+        Self: TestAny<Pred>,
+    {
+        TestAny::any(self, predicate)
+    }
+
+    /// Tests if every element of the tuple matches a predicate.
+    ///
+    /// Check out [`UnaryPredicate`]'s documentation page to learn how to build
+    /// a unary predicate that can be passed to [`all()`](TupleLike::all()).
+    ///
+    /// [`all()`](TupleLike::all()) is short-circuiting; in other words, it will stop processing as soon as it finds a `false`,
+    /// given that no matter what else happens, the result will also be `false`.
+    ///
+    /// An empty tuple returns `true`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{unary_pred, tuple, TupleLike};
+    ///
+    /// let predicate = unary_pred!{
+    ///     |x: i32| { (0..10).contains(x) },
+    ///     |x: &str| { x.parse::<i32>().is_ok() },
+    /// };
+    ///
+    /// let tup = tuple!(1, 2, "3");
+    /// let result = tup.all(predicate);
+    /// assert_eq!(result, true);
+    ///
+    /// let tup = tuple!(7, 8, "hello");
+    /// let result = tup.all(predicate);
+    /// assert_eq!(result, false);
+    /// ```
+    fn all<Pred>(&self, predicate: Pred) -> bool
+    where
+        Self: TestAll<Pred>,
+    {
+        TestAll::all(self, predicate)
     }
 
     /// Performs dot product operation.
