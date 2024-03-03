@@ -84,14 +84,14 @@ use crate::{Tuple, TupleLike, Unit};
 ///     }
 /// }
 ///
-/// let basic = Basis(0..5); // Let us assume that `basis` is known only at runtime
+/// let basis = Basis(0..5); // Let us assume that `basis` is known only at runtime
 ///
 /// let tup = tuple!(1, 2, "3");
-/// let result = tup.all(basic.clone());
+/// let result = tup.all(basis.clone());
 /// assert_eq!(result, true);
 ///
 /// let tup = tuple!(-1, 8, "10");
-/// let result = tup.any(basic.clone());
+/// let result = tup.any(basis.clone());
 /// assert_eq!(result, false);
 /// ```
 pub trait UnaryPredicate<T> {
