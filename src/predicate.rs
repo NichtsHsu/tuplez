@@ -45,11 +45,11 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// let tup = tuple!(1, 2, "3");
 /// let result = tup.any(
-///     tuple! {
+///     tuple!(
 ///         |x: &i32| *x < 0,
 ///         |x: &i32| *x > 100,
 ///         |x: &&str| *x == "1",
-///     }
+///     )
 /// );
 /// assert_eq!(result, false);
 /// ```
