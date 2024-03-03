@@ -99,7 +99,7 @@
 //!
 //! let tup9 = tuple!(1, "2", 3.0);
 //! let result = tup9.fold(
-//!     seq_folder!(
+//!     tuple!(
 //!         |acc, x| (acc + x) as f64,
 //!         |acc: f64, x: &str| acc.to_string() + x,
 //!         |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
@@ -531,7 +531,7 @@ pub use tuplez_macros::split_at;
 /// ```
 pub use tuplez_macros::swap_at;
 
-/// Provides a simple way to build a functor that implements [`Mapper`](crate::foreach::Mapper).
+/// Provides a simple way to build a mapper that implements [`Mapper`](crate::foreach::Mapper).
 ///
 /// # Syntax
 ///
@@ -563,7 +563,7 @@ pub use tuplez_macros::swap_at;
 /// ```
 ///
 /// If the return value requires a lifetime, you need to explicitly introduce the lifetime annotation, since Rust binds the lifetime
-/// of return value to the functor instead of the element by default:
+/// of return value to the mapper instead of the element by default:
 ///
 /// ```text
 /// <'a> |x: &'a str| -> &'a [u8] { x.as_bytes() }
@@ -692,42 +692,6 @@ pub use tuplez_macros::mapper;
 ///
 /// It is allowed to add commas or semicolons as separators between rules. Sometimes this may look better.
 pub use tuplez_macros::folder;
-
-/// Provides a simple way to build a folder that implements [`Folder`](crate::fold::Folder).
-///
-/// # Syntax
-///
-/// ```text
-/// seq_folder!( [ Closure1, Closure2, ...] )
-/// ```
-///
-/// # Explanation
-///
-/// Unlike [`folder!`], the [`seq_folder!`] does not do any processing of closures and just wraps them.
-/// So your input must fully conform to Rust's closure syntax, and this means:
-///
-/// 1. You cannot introduce generic types and lifetimes like [`folder!`].
-/// 2. You don't need to add braces for closures that only have a single expression, but instead you
-/// need to add commas between closures to separate them.
-/// 3. You can capture context variables.
-///
-/// For example:
-///
-/// ```
-/// use tuplez::{seq_folder, tuple, TupleLike};
-///
-/// let tup = tuple!(1, "2", 3.0);
-/// let result = tup.fold(
-///     seq_folder!(
-///         |acc, x| (acc + x) as f64,
-///         |acc: f64, x: &str| acc.to_string() + x,
-///         |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
-///     ),  // Type of `acc` of each closure is the return type of the previous closure.
-///     0,
-/// );
-/// assert_eq!(result, 15);
-/// ```
-pub use tuplez_macros::seq_folder;
 
 /// Pass the elements of a tuple as arguments to a function or method.
 ///

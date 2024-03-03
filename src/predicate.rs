@@ -36,7 +36,7 @@ use crate::{Tuple, TupleLike, Unit};
 /// ## Test tuples in order of their elements
 ///
 /// You can create a new tuple with the same number of elements, whose elements are all callable objects that accepts an immutable reference to
-/// an element returns a `bool` value ([`FnOnce(&T) -> bool`](std::ops::FnOnce)), then, you can use that tuple as an unary predicate.
+/// an element and returns a `bool` value ([`FnOnce(&T) -> bool`](std::ops::FnOnce)), then, you can use that tuple as an unary predicate.
 ///
 /// For example:
 ///

@@ -29,6 +29,9 @@ pub struct Unit;
 /// See [`Unit`] type which represents tuples containing no elements.
 ///
 /// The [`TupleLike`] trait defines the basic methods of all [`Tuple`] types and [`Unit`] type.
+/// Check out [`TupleLike`]'s documentation page to see exactly what APIs are available.
+///
+/// # Build a tuple
 ///
 /// You can create a tuple quickly and easily using the [`tuple!`](crate::tuple!) macro:
 ///
@@ -337,10 +340,16 @@ pub struct Unit;
 ///
 /// You can traverse tuples by [`foreach()`](TupleLike::foreach()).
 ///
-/// Call [`foreach()`](TupleLike::foreach()) on a tuple requires a functor implementing
+/// Call [`foreach()`](TupleLike::foreach()) on a tuple requires a mapper implementing
 /// [`Mapper`](crate::foreach::Mapper) as the parameter. Check its documentation page for examples.
 ///
-/// However, here is a [`mapper!`](crate::mapper!) macro that can help you quickly build a simple functor:
+/// However, here are two ways you can quickly build a mapper.
+///
+/// ## Traverse tuples by element types
+///
+/// The [`mapper!`](crate::mapper!) macro helps you build a mapper that traverses tuples according to their element types.
+///
+/// For example:
 ///
 /// ```
 /// use tuplez::{mapper, tuple, TupleLike};
@@ -353,10 +362,26 @@ pub struct Unit;
 /// assert_eq!(tup, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
 /// ```
 ///
-/// Check the documentation pages of [`mapper!`](crate::mapper!) macro for detailed syntax.
+/// ## Traverse tuples in order of their elements
 ///
-/// NOTE: Traversing a tuple will consume it. If this is not what you want, call [`as_ref()`](TupleLike::as_ref())
-/// or [`as_mut()`](TupleLike::as_mut()) to create a new tuple that references its all members before traversing.
+/// You can create a new tuple with the same number of elements, whose elements are all callable objects that accepts an element
+/// and returns another value ([`FnOnce(T) -> U`](std::ops::FnOnce)), then, you can use that tuple as a mapper.
+///
+/// The outputs will be collected into a tuple:
+///
+/// ```
+/// use tuplez::{tuple, TupleLike};
+///
+/// let tup = tuple!(1, 2, 3);
+/// let result = tup.foreach(
+///     tuple!(
+///         |x| x as f32,
+///         |x: i32| x.to_string(),
+///         |x: i32| Some(x),
+///     )
+/// );
+/// assert_eq!(result, tuple!(1.0, "2".to_string(), Some(3)));
+/// ```
 ///
 /// # Fold tuples
 ///
@@ -365,7 +390,7 @@ pub struct Unit;
 /// Call [`fold()`](TupleLike::fold()) on a tuple requires a folder implementing
 /// [`Folder`](crate::fold::Folder) as the parameter. Check its documentation page for examples.
 ///
-/// However, here are three ways you can quickly build a folder.
+/// However, here are two ways you can quickly build a folder.
 ///
 /// ## Fold tuples by element types
 ///
@@ -389,16 +414,17 @@ pub struct Unit;
 ///
 /// ## Fold tuples in order of their elements
 ///
-/// The [`seq_folder!`](crate::seq_folder!) macro helps you build a folder that folds tuples in order of their elements.
+/// You can create a new tuple with the same number of elements, whose elements are all callable objects that accepts the accumulation value
+/// and an element and returns new accumulation value ([`FnOnce(Acc, T) -> Acc`](std::ops::FnOnce)), then, you can use that tuple as a folder.
 ///
 /// For example:
 ///
 /// ```
-/// use tuplez::{seq_folder, tuple, TupleLike};
+/// use tuplez::{tuple, TupleLike};
 ///
 /// let tup = tuple!(1, "2", 3.0);
 /// let result = tup.fold(
-///     seq_folder!(
+///     tuple!(
 ///         |acc, x| (acc + x) as f64,
 ///         |acc: f64, x: &str| acc.to_string() + x,
 ///         |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
@@ -406,28 +432,6 @@ pub struct Unit;
 ///     0,
 /// );
 /// assert_eq!(result, 15);
-/// ```
-///
-/// ## Fold tuples in order of their elements, but collecting results in a tuple
-///
-/// You can create a new tuple with the same number of elements, whose elements are all callable ([`FnOnce`]),
-/// then, you can use that tuple as a folder.
-///
-/// The outputs will be collected into a tuple:
-///
-/// ```
-/// use tuplez::{tuple, TupleLike};
-///
-/// let tup = tuple!(1, 2, 3);
-/// let result = tup.fold(
-///     tuple!(
-///         |x| x as f32,
-///         |x: i32| x.to_string(),
-///         |x: i32| Some(x),
-///     ),
-///     tuple!(),
-/// );
-/// assert_eq!(result, tuple!(1.0, "2".to_string(), Some(3)));
 /// ```
 ///
 /// # Convert from/to primitive tuples
@@ -969,14 +973,10 @@ pub trait TupleLike {
     /// Traverse the tuple, and collect the output of traversal into a new tuple.
     ///
     /// Check out [`Mapper`](crate::foreach::Mapper)'s documentation page to learn how to build
-    /// a functor that can be passed to [`foreach()`](TupleLike::foreach()).
+    /// a mapper that can be passed to [`foreach()`](TupleLike::foreach()).
     ///
     /// NOTE: Traverse a tuple will consume it. If this is not what you want, call [`as_ref()`](TupleLike::as_ref())
     /// or [`as_mut()`](TupleLike::as_mut()) to create a new tuple that references its all members before traversing.
-    ///
-    /// Tip: [`foreach()`](TupleLike::foreach) traverses elements by their types.
-    /// If you are looking for a way to traverse elements by their order, then what you are looking for is to
-    /// [pass a tuple containing callable objects into `fold()` method](Tuple#fold-tuples-in-order-of-their-elements-but-collecting-results-in-a-tuple).
     ///
     /// # Example
     ///
@@ -990,11 +990,11 @@ pub trait TupleLike {
     /// });
     /// assert_eq!(tup, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
     /// ```
-    fn foreach<F>(self, functor: &mut F) -> <Self as Foreach<F>>::Output
+    fn foreach<F>(self, mapper: F) -> <Self as Foreach<F>>::Output
     where
         Self: Foreach<F> + Sized,
     {
-        Foreach::foreach(self, functor)
+        Foreach::foreach(self, mapper)
     }
 
     /// Fold the tuple.

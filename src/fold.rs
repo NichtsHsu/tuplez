@@ -20,7 +20,7 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// # Quickly build a folder by macros
 ///
-/// Here are three ways you can quickly build a folder.
+/// Here are two ways you can quickly build a folder.
 ///
 /// ## Fold tuples by element types
 ///
@@ -44,16 +44,17 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// ## Fold tuples in order of their elements
 ///
-/// The [`seq_folder!`](crate::seq_folder!) macro helps you build a folder that folds tuples in order of their elements.
+/// You can create a new tuple with the same number of elements, whose elements are all callable objects that accepts the accumulation value
+/// and an element and returns new accumulation value ([`FnOnce(Acc, T) -> Acc`](std::ops::FnOnce)), then, you can use that tuple as a folder.
 ///
 /// For example:
 ///
 /// ```
-/// use tuplez::{seq_folder, tuple, TupleLike};
+/// use tuplez::{tuple, TupleLike};
 ///
 /// let tup = tuple!(1, "2", 3.0);
 /// let result = tup.fold(
-///     seq_folder!(
+///     tuple!(
 ///         |acc, x| (acc + x) as f64,
 ///         |acc: f64, x: &str| acc.to_string() + x,
 ///         |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
@@ -61,28 +62,6 @@ use crate::{Tuple, TupleLike, Unit};
 ///     0,
 /// );
 /// assert_eq!(result, 15);
-/// ```
-///
-/// ## Fold tuples in order of their elements, but collecting results in a tuple
-///
-/// You can create a new tuple with the same number of elements, whose elements are all callable objects([`FnOnce`]),
-/// then, you can use that tuple as a folder.
-///
-/// The outputs will be collected into a tuple:
-///
-/// ```
-/// use tuplez::{tuple, TupleLike};
-///
-/// let tup = tuple!(1, 2, 3);
-/// let result = tup.fold(
-///     tuple!(
-///         |x| x as f32,
-///         |x: i32| x.to_string(),
-///         |x: i32| Some(x),
-///     ),
-///     tuple!(),
-/// );
-/// assert_eq!(result, tuple!(1.0, "2".to_string(), Some(3)));
 /// ```
 ///
 /// # Custom folder
@@ -172,107 +151,13 @@ pub trait Foldable<F, Acc>: TupleLike {
 
 impl<First, F, Out, FOthers, Acc> Folder<First, Acc> for Tuple<F, FOthers>
 where
-    F: FnOnce(First) -> Out,
-    Acc: TupleLike,
-    FOthers: TupleLike,
-{
-    type Output = Acc::PushBackOutput<Out>;
-    type NextFolder = FOthers;
-
-    fn fold(self, acc: Acc, value: First) -> (Self::Output, Self::NextFolder) {
-        (acc.push((self.0)(value)), self.1)
-    }
-}
-
-/// The underlying type of the folder built by the [`seq_folder!`](crate::seq_folder!) macro.
-///
-/// Basically, it is just a wrapper of [`Tuple`]. Because the
-/// [`Tuple` has another use as a `Folder`](Tuple#fold-tuples-in-order-of-their-elements-but-collecting-results-in-a-tuple),
-/// and Rust cannot implement the same trait again for [`Tuple`]s that only have different element types.
-/// Therefore, the [`SeqFolder`] is introduced.
-///
-/// You should always use the [`seq_folder!`](crate::seq_folder!) macro to build a [`SeqFolder`].
-///
-/// But anyway, [`SeqFolder`] can be converted from/to [`Tuple`].
-///
-/// ```
-/// use tuplez::{fold::SeqFolder, seq_folder, tuple, TupleLike};
-///
-/// let tup = tuple!(1, "2", 3.0);
-/// let folder = seq_folder!(
-///     |acc, x| (acc + x) as f64,
-///     |acc: f64, x: &str| acc.to_string() + x,
-///     |acc: String, x| acc.parse::<i32>().unwrap() + x as i32,
-/// );
-/// let tup_folder = folder.to_tuple();
-/// let folder = SeqFolder::from(tup_folder);
-/// let result = tup.fold(folder, 0);
-/// assert_eq!(result, 15);
-/// ```
-#[derive(Copy, Clone, Debug)]
-pub struct SeqFolder<T>(pub T);
-
-impl From<Unit> for SeqFolder<Unit> {
-    fn from(_: Unit) -> Self {
-        Self(Unit)
-    }
-}
-
-impl<First, Other, SeqOther> From<Tuple<First, Other>>
-    for SeqFolder<Tuple<First, SeqFolder<SeqOther>>>
-where
-    SeqFolder<SeqOther>: From<Other>,
-{
-    fn from(value: Tuple<First, Other>) -> Self {
-        Self(Tuple(value.0, From::from(value.1)))
-    }
-}
-
-/// Helper trait for converting [`SeqFolder`] to [`Tuple`].
-pub trait SeqFolderToTuple {
-    /// The type of equivalent [`Tuple`].
-    type Output: TupleLike;
-
-    /// Convert [`SeqFolder`] to [`Tuple`].
-    fn to_tuple(self) -> Self::Output;
-}
-
-impl SeqFolderToTuple for SeqFolder<Unit> {
-    type Output = Unit;
-    fn to_tuple(self) -> Self::Output {
-        Unit
-    }
-}
-
-impl<First, Other> SeqFolderToTuple for SeqFolder<Tuple<First, Other>>
-where
-    Other: SeqFolderToTuple,
-{
-    type Output = Tuple<First, Other::Output>;
-    fn to_tuple(self) -> Self::Output {
-        Tuple(self.0 .0, self.0 .1.to_tuple())
-    }
-}
-
-impl<T> SeqFolder<T>
-where
-    SeqFolder<T>: SeqFolderToTuple,
-{
-    /// Convert [`SeqFolder`] to [`Tuple`].
-    pub fn to_tuple(self) -> <Self as SeqFolderToTuple>::Output {
-        SeqFolderToTuple::to_tuple(self)
-    }
-}
-
-impl<First, F, Out, FOthers, Acc> Folder<First, Acc> for SeqFolder<Tuple<F, SeqFolder<FOthers>>>
-where
     F: FnOnce(Acc, First) -> Out,
 {
     type Output = Out;
-    type NextFolder = SeqFolder<FOthers>;
+    type NextFolder = FOthers;
 
     fn fold(self, acc: Acc, value: First) -> (Self::Output, Self::NextFolder) {
-        ((self.0 .0)(acc, value), self.0 .1)
+        ((self.0)(acc, value), self.1)
     }
 }
 

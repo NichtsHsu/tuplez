@@ -3,12 +3,12 @@
 //! Check the documentation page of [`Mapper`] for details.
 use crate::{Tuple, TupleLike, Unit};
 
-/// Define functors for traversing the tuple.
+/// Define mappers for traversing the tuple.
 ///
-/// To traverse a tuple with type [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to construct a custom functor type,
+/// To traverse a tuple with type [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to construct a custom mapper type,
 /// which implements [`Mapper<T0>`], [`Mapper<T1>`] ... [`Mapper<Tn>`].
-/// Pass your functor to tuple's [`foreach()`](TupleLike::foreach()) method, then the tuple will call
-/// functor's [`map()`](Mapper::map()) method in order of its elements and move the elements in.
+/// Pass your mapper to tuple's [`foreach()`](TupleLike::foreach()) method, then the tuple will call
+/// mapper's [`map()`](Mapper::map()) method in order of its elements and move the elements in.
 ///
 /// NOTE: Traversing a tuple will consume it. If this is not what you want, call [`as_ref()`](TupleLike::as_ref())
 /// or [`as_mut()`](TupleLike::as_mut()) to create a new tuple that references its all members before traversing.
@@ -17,9 +17,15 @@ use crate::{Tuple, TupleLike, Unit};
 /// then what you are looking for is to
 /// [pass a tuple containing callable objects into `fold()` method](Tuple#fold-tuples-in-order-of-their-elements-but-collecting-results-in-a-tuple).
 ///
-/// # The [`mapper!`](crate::mapper!) macro
+/// # Quickly build a mapper by macros
 ///
-/// There is a [`mapper!`](crate::mapper!) macro that helps you build a functor simply, here is an example:
+/// Here are two ways you can quickly build a folder.
+///
+/// ## Traverse tuples by element types
+///
+/// The [`mapper!`](crate::mapper!) macro helps you build a mapper that traverses tuples according to their element types.
+///
+/// For example:
 ///
 /// ```
 /// use tuplez::{mapper, tuple, TupleLike};
@@ -32,13 +38,32 @@ use crate::{Tuple, TupleLike, Unit};
 /// assert_eq!(tup, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
 /// ```
 ///
-/// Check the documentation page of [`mapper!`](crate::mapper!) for detailed syntax.
+/// ## Traverse tuples in order of their elements
 ///
-/// # Custom functor
+/// You can create a new tuple with the same number of elements, whose elements are all callable objects that accepts an element
+/// and returns another value ([`FnOnce(T) -> U`](std::ops::FnOnce)), then, you can use that tuple as a mapper.
+///
+/// The outputs will be collected into a tuple:
+///
+/// ```
+/// use tuplez::{tuple, TupleLike};
+///
+/// let tup = tuple!(1, 2, 3);
+/// let result = tup.foreach(
+///     tuple!(
+///         |x| x as f32,
+///         |x: i32| x.to_string(),
+///         |x: i32| Some(x),
+///     )
+/// );
+/// assert_eq!(result, tuple!(1.0, "2".to_string(), Some(3)));
+/// ```
+///
+/// # Custom mapper
 ///
 /// For more complex cases that cannot be covered by the [`mapper!`](crate::mapper!) macro,
-/// for example, you want to save some results inside your functor,
-/// you need to implement [`Mapper<Ti>`] for your functor for all element type `Ti`s in tuples.
+/// for example, you want to save some results into context variables,
+/// you need to implement [`Mapper<Ti>`] for your mapper for all element type `Ti`s in tuples.
 /// Generic can be used.
 ///
 /// For example:
@@ -48,31 +73,38 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// struct MyElement(i32);
 ///
-/// #[derive(Default)]
-/// struct Collector(Vec<String>);
+/// struct Collector<'a>(&'a mut Vec<String>);
 ///
-/// impl<T: ToString> Mapper<&T> for Collector {
+/// impl<T: ToString> Mapper<&T> for Collector<'_> {
 ///     type Output = ();
-///     fn map(&mut self, value: &T) -> Self::Output {
-///         self.0.push(format!(
-///             "{} : {}",
-///             std::any::type_name::<T>(),
-///             value.to_string()
-///         ))
+///     type NextMapper = Self;
+///     fn map(self, value: &T) -> (Self::Output, Self::NextMapper) {
+///         (
+///             self.0.push(format!(
+///                 "{} : {}",
+///                 std::any::type_name::<T>(),
+///                 value.to_string()
+///             )),
+///             self,
+///         )
 ///     }
 /// }
 ///
-/// impl Mapper<&MyElement> for Collector {
+/// impl Mapper<&MyElement> for Collector<'_> {
 ///     type Output = ();
-///     fn map(&mut self, value: &MyElement) -> Self::Output {
-///         self.0.push(format!("MyElement : {}", value.0))
+///     type NextMapper = Self;
+///     fn map(self, value: &MyElement) -> (Self::Output, Self::NextMapper) {
+///         (self.0.push(format!("MyElement : {}", value.0)), self)
 ///     }
 /// }
 ///
-/// let mut collector = Collector::default();
-/// tuple!(1, "hello", MyElement(14)).as_ref().foreach(&mut collector);
+/// let mut buffers = vec![];
+/// let collector = Collector(&mut buffers);
+/// tuple!(1, "hello", MyElement(14))
+///     .as_ref()
+///     .foreach(collector);
 /// assert_eq!(
-///     collector.0,
+///     buffers,
 ///     vec![
 ///         "i32 : 1".to_string(),
 ///         "&str : hello".to_string(),
@@ -84,15 +116,18 @@ pub trait Mapper<T> {
     /// Output type of mapping.
     type Output;
 
+    /// Type of next mapper to be use.
+    type NextMapper;
+
     /// Map an element to another value.
-    fn map(&mut self, value: T) -> Self::Output;
+    fn map(self, value: T) -> (Self::Output, Self::NextMapper);
 }
 
 /// Traverse the tuple.
 ///
-/// # The Functor `F`
+/// # The mapper `F`
 ///
-/// For traversing [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to build a functor,
+/// For traversing [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to build a mapper,
 /// which needs to implement [`Mapper<T0>`], [`Mapper<T1>`] ... [`Mapper<Tn>`].
 ///
 /// See the documentation page of [`Mapper`] for details.
@@ -120,12 +155,25 @@ pub trait Foreach<F>: TupleLike {
     /// });
     /// assert_eq!(tup, tuple!(1i64, b"hello" as &[u8], "3.14".to_string()));
     /// ```
-    fn foreach(self, f: &mut F) -> Self::Output;
+    fn foreach(self, f: F) -> Self::Output;
+}
+
+impl<First, F, Out, FOthers> Mapper<First> for Tuple<F, FOthers>
+where
+    F: FnOnce(First) -> Out,
+    FOthers: TupleLike,
+{
+    type Output = Out;
+    type NextMapper = FOthers;
+
+    fn map(self, value: First) -> (Self::Output, Self::NextMapper) {
+        ((self.0)(value), self.1)
+    }
 }
 
 impl<F> Foreach<F> for Unit {
     type Output = Unit;
-    fn foreach(self, _: &mut F) -> Self::Output {
+    fn foreach(self, _: F) -> Self::Output {
         Unit
     }
 }
@@ -133,10 +181,11 @@ impl<F> Foreach<F> for Unit {
 impl<F, First, Other> Foreach<F> for Tuple<First, Other>
 where
     F: Mapper<First>,
-    Other: Foreach<F>,
+    Other: Foreach<F::NextMapper>,
 {
-    type Output = Tuple<<F as Mapper<First>>::Output, <Other as Foreach<F>>::Output>;
-    fn foreach(self, f: &mut F) -> Self::Output {
-        Tuple(f.map(self.0), Foreach::foreach(self.1, f))
+    type Output = Tuple<F::Output, Other::Output>;
+    fn foreach(self, f: F) -> Self::Output {
+        let (out, f) = f.map(self.0);
+        Tuple(out, Foreach::foreach(self.1, f))
     }
 }

@@ -236,9 +236,10 @@ pub fn mapper(input: TokenStream) -> TokenStream {
             quote!(
                 impl #generic Mapper<#tyx> for __Mapper {
                     type Output = #tyout;
-                    fn map(&mut self, value: #tyx) -> Self::Output {
+                    type NextMapper = Self;
+                    fn map(self, value: #tyx) -> (Self::Output, Self::NextMapper) {
                         let f = | #mutx #x : #tyx | -> #tyout #body;
-                        f(value)
+                        (f(value), self)
                     }
                 }
             )
@@ -250,7 +251,7 @@ pub fn mapper(input: TokenStream) -> TokenStream {
             #[derive(Copy, Clone, Debug)]
             struct __Mapper;
             #(#rules)*
-            &mut __Mapper
+            __Mapper
         }
     )
     .into()
@@ -296,16 +297,6 @@ pub fn folder(input: TokenStream) -> TokenStream {
         }
     )
     .into()
-}
-
-#[proc_macro]
-pub fn seq_folder(input: TokenStream) -> TokenStream {
-    let TupleGen(exprs) = parse_macro_input!(input as TupleGen);
-    let mut unpack = quote!(::tuplez::fold::SeqFolder(::tuplez::Unit));
-    for expr in exprs.into_iter().rev() {
-        unpack = quote!( ::tuplez::fold::SeqFolder(::tuplez::Tuple( #expr, #unpack)) );
-    }
-    unpack.into()
 }
 
 #[proc_macro]
