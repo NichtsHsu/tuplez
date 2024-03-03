@@ -366,9 +366,7 @@ pub struct Unit;
 ///
 /// You can create a new tuple with the same number of elements, whose elements are all callable objects that accepts an element
 /// and returns another value ([`FnOnce(T) -> U`](std::ops::FnOnce)), then, you can use that tuple as a mapper.
-///
-/// The outputs will be collected into a tuple:
-///
+//
 /// ```
 /// use tuplez::{tuple, TupleLike};
 ///
