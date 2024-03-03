@@ -781,7 +781,7 @@ where
 }
 
 /// replace head elements of the tuple.
-pub trait HeadReplaceable<T>: TupleLike {
+pub trait HeadReplaceable<T: TupleLike>: TupleLike {
     /// The type of the tuple after replacing its elements.
     type ReplaceOutput: TupleLike;
 
@@ -822,6 +822,7 @@ impl<First1, Other1, First2, Other2> HeadReplaceable<Tuple<First2, Other2>>
     for Tuple<First1, Other1>
 where
     Other1: HeadReplaceable<Other2>,
+    Other2: TupleLike,
 {
     type ReplaceOutput = Tuple<First2, Other1::ReplaceOutput>;
     type Replaced = Tuple<First1, Other1::Replaced>;

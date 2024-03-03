@@ -1316,6 +1316,7 @@ pub trait TupleLike {
     /// ```
     fn replace_head<T>(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced)
     where
+        T: TupleLike,
         Self: HeadReplaceable<T> + Sized,
     {
         HeadReplaceable::replace_head(self, rhs)
@@ -1336,6 +1337,7 @@ pub trait TupleLike {
     /// ```
     fn replace_tail<T, R>(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced)
     where
+        T: TupleLike,
         Self: TailReplaceable<T, R> + Sized,
     {
         TailReplaceable::replace_tail(self, rhs)
@@ -1367,6 +1369,7 @@ pub trait TupleLike {
     /// ```
     fn replace_with<T, R>(&mut self, rhs: T) -> T
     where
+        T: TupleLike,
         Self: ReplaceWith<T, R>,
     {
         ReplaceWith::replace_with(self, rhs)
@@ -1391,6 +1394,7 @@ pub trait TupleLike {
     /// ```
     fn swap_with<T, R>(&mut self, rhs: &mut T)
     where
+        T: TupleLike,
         Self: ReplaceWith<T, R>,
     {
         ReplaceWith::swap_with(self, rhs)

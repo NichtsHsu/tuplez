@@ -133,7 +133,7 @@ where
 }
 
 /// replace tail elements of the tuple.
-pub trait TailReplaceable<T, Result>: TupleLike {
+pub trait TailReplaceable<T: TupleLike, Result>: TupleLike {
     /// The type of the tuple after replacing its elements.
     type ReplaceOutput: TupleLike;
 
@@ -174,6 +174,7 @@ where
 
 impl<First, Other, T, Result> TailReplaceable<T, Searching<Result>> for Tuple<First, Other>
 where
+    T: TupleLike,
     Other: TailReplaceable<T, Result>,
 {
     type ReplaceOutput = Tuple<First, Other::ReplaceOutput>;
@@ -186,7 +187,7 @@ where
 }
 
 /// Replace a sequence of elements in the tuple with all elements of another tuple.
-pub trait ReplaceWith<T, Result>: TupleLike {
+pub trait ReplaceWith<T: TupleLike, Result>: TupleLike {
     /// Replace a sequence of elements in the tuple with all elements of another tuple.
     ///
     /// The tuple will search for a sequence of elements whose types are exactly the same as
@@ -269,6 +270,7 @@ where
 
 impl<First, Other, T, Result> ReplaceWith<T, Searching<Result>> for Tuple<First, Other>
 where
+    T: TupleLike,
     Other: ReplaceWith<T, Result>,
 {
     fn replace_with(&mut self, rhs: T) -> T {
