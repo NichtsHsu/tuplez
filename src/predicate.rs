@@ -1,10 +1,10 @@
 //! Provides the ability to test tuples.
 
-use crate::{Tuple, TupleLike, Unit};
+use crate::{foreach::Mapper, Tuple, TupleLike, Unit};
 
-/// Define an unary predicate that accepts immutable reference of a value and produces a `bool` result.
+/// Define a unary predicate that accepts immutable reference of a value and produces a `bool` result.
 ///
-/// Call [`any()`](TupleLike::any()) and [`all()`](TupleLike::all()) on a tuple requires an unary predicate
+/// Call [`any()`](TupleLike::any()) and [`all()`](TupleLike::all()) on a tuple requires a unary predicate
 /// that implements [`UnaryPredicate`].
 ///
 /// Note that the predicate always receives an immutable reference to the element of the tuple.
@@ -15,12 +15,12 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// ## Test tuples by element types
 ///
-/// The [`unary_pred!`](crate::unary_pred!) macro helps you build an unary predicate that test tuples according to their element types.
+/// The [`unary_pred!`](crate::unary_pred!) macro helps you build a unary predicate that test tuples according to their element types.
 ///
 /// For example:
 ///
 /// ```
-/// use tuplez::{unary_pred, tuple, TupleLike};
+/// use tuplez::{tuple, TupleLike, unary_pred};
 ///
 /// let tup = tuple!(1, "2", |x: i32| x >= 0);
 /// let result = tup.all(
@@ -35,8 +35,9 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// ## Test tuples in order of their elements
 ///
-/// You can create a new tuple with the same number of elements, whose elements are all callable objects that accepts an immutable reference to
-/// an element and returns a `bool` value ([`FnOnce(&T) -> bool`](std::ops::FnOnce)), then, you can use that tuple as an unary predicate.
+/// You can create a new tuple with the same number of elements, whose elements are all callable objects that accepts
+/// an immutable reference to an element and returns a `bool` value ([`FnOnce(&T) -> bool`](std::ops::FnOnce)),
+/// then, you can use that tuple as a unary predicate.
 ///
 /// For example:
 ///
@@ -56,29 +57,34 @@ use crate::{Tuple, TupleLike, Unit};
 ///
 /// # Custom unary predicate
 ///
-/// If you are not satisfied with the above two methods, you can customize a unary predicate.
+/// NOTE: In general, a unary predicate is equivalent to a mapper that accepts immutable references
+/// to elements and returns a `bool` value. Therefore, instead of [`UnaryPredicate<T>`],
+/// you should implement [`Mapper<&T, Output=bool>`](Mapper) for your custom type, and use it as a unary predicate.
+/// In fact, this is what the [`unary_pred!`](crate::unary_pred!) macro does.
 ///
 /// Here is an example:
 ///
 /// ```
 /// use std::ops::Range;
-/// use tuplez::{predicate::UnaryPredicate, tuple, TupleLike};
+/// use tuplez::{foreach::Mapper, tuple, TupleLike};
 ///
 /// #[derive(Clone)]
 /// struct Basis(Range<i32>);
 ///
-/// impl UnaryPredicate<i32> for Basis {
-///     type NextUnaryPredicate = Self;
-///     fn test(self, testee: &i32) -> (bool, Self::NextUnaryPredicate) {
-///         (self.0.contains(testee), self)
+/// impl Mapper<&i32> for Basis {
+///     type Output = bool;
+///     type NextMapper = Self;
+///     fn map(self, value: &i32) -> (Self::Output, Self::NextMapper) {
+///         (self.0.contains(value), self)
 ///     }
 /// }
 ///
-/// impl UnaryPredicate<&str> for Basis {
-///     type NextUnaryPredicate = Self;
-///     fn test(self, testee: &&str) -> (bool, Self::NextUnaryPredicate) {
+/// impl Mapper<&&str> for Basis {
+///     type Output = bool;
+///     type NextMapper = Self;
+///     fn map(self, value: &&str) -> (Self::Output, Self::NextMapper) {
 ///         (
-///             testee.parse::<i32>().is_ok_and(|s| self.0.contains(&s)),
+///             value.parse::<i32>().is_ok_and(|s| self.0.contains(&s)),
 ///             self,
 ///         )
 ///     }
@@ -94,21 +100,22 @@ use crate::{Tuple, TupleLike, Unit};
 /// let result = tup.any(basis.clone());
 /// assert_eq!(result, false);
 /// ```
-pub trait UnaryPredicate<T> {
+pub trait UnaryPredicate<'a, T: 'a> {
     /// Type of next unary predicate to be use.
     type NextUnaryPredicate;
 
     /// Test a value with its immutable reference
-    fn test(self, testee: &T) -> (bool, Self::NextUnaryPredicate);
+    fn test(self, testee: &'a T) -> (bool, Self::NextUnaryPredicate);
 }
 
-impl<F, FOther, T> UnaryPredicate<T> for Tuple<F, FOther>
+impl<'a, T, F> UnaryPredicate<'a, T> for F
 where
-    F: FnOnce(&T) -> bool,
+    T: 'a,
+    F: Mapper<&'a T, Output = bool>,
 {
-    type NextUnaryPredicate = FOther;
-    fn test(self, testee: &T) -> (bool, Self::NextUnaryPredicate) {
-        ((self.0)(testee), self.1)
+    type NextUnaryPredicate = <F as Mapper<&'a T>>::NextMapper;
+    fn test(self, testee: &'a T) -> (bool, Self::NextUnaryPredicate) {
+        self.map(testee)
     }
 }
 
@@ -116,7 +123,7 @@ where
 ///
 /// # The unary predicate `Pred`
 ///
-/// For testing [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to build an unary predicate,
+/// For testing [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to build a unary predicate,
 /// which needs to implement [`UnaryPredicate<T0>`], and the [`NextUnaryPredicate`](UnaryPredicate::NextUnaryPredicate)
 /// needs to implement [`UnaryPredicate<T1>`], and so on.
 ///
@@ -138,7 +145,7 @@ pub trait TestAny<Pred>: TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::{unary_pred, tuple, TupleLike};
+    /// use tuplez::{tuple, TupleLike, unary_pred};
     ///
     /// let predicate = unary_pred! {
     ///     |x: i32| { (0..10).contains(x) },
@@ -164,8 +171,8 @@ impl<Pred> TestAny<Pred> for Unit {
 
 impl<Pred, First, Other> TestAny<Pred> for Tuple<First, Other>
 where
-    Pred: UnaryPredicate<First>,
-    Other: TestAny<Pred::NextUnaryPredicate>,
+    for<'a> Pred: UnaryPredicate<'a, First>,
+    for<'a> Other: TestAny<<Pred as UnaryPredicate<'a, First>>::NextUnaryPredicate>,
 {
     fn any(&self, predicate: Pred) -> bool {
         let (res, next) = predicate.test(&self.0);
@@ -177,7 +184,7 @@ where
 ///
 /// # The unary predicate `Pred`
 ///
-/// For testing [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to build an unary predicate,
+/// For testing [`Tuple<T0, T1, ... Tn>`](crate::Tuple), you need to build a unary predicate,
 /// which needs to implement [`UnaryPredicate<T0>`], and the [`NextUnaryPredicate`](UnaryPredicate::NextUnaryPredicate)
 /// needs to implement [`UnaryPredicate<T1>`], and so on.
 ///
@@ -199,7 +206,7 @@ pub trait TestAll<Pred>: TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::{unary_pred, tuple, TupleLike};
+    /// use tuplez::{tuple, TupleLike, unary_pred};
     ///
     /// let predicate = unary_pred! {
     ///     |x: i32| { (0..10).contains(x) },
@@ -225,8 +232,8 @@ impl<Pred> TestAll<Pred> for Unit {
 
 impl<Pred, First, Other> TestAll<Pred> for Tuple<First, Other>
 where
-    Pred: UnaryPredicate<First>,
-    Other: TestAll<Pred::NextUnaryPredicate>,
+    for<'a> Pred: UnaryPredicate<'a, First>,
+    for<'a> Other: TestAll<<Pred as UnaryPredicate<'a, First>>::NextUnaryPredicate>,
 {
     fn all(&self, predicate: Pred) -> bool {
         let (res, next) = predicate.test(&self.0);

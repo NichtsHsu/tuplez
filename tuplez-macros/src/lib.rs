@@ -315,11 +315,12 @@ pub fn unary_pred(input: TokenStream) -> TokenStream {
             let tyout = output_type.unwrap();
 
             quote!(
-                impl #generic UnaryPredicate<#tyx> for __UnaryPred {
-                    type NextUnaryPredicate = Self;
-                    fn test(self, testee: & #tyx) -> (bool, Self::NextUnaryPredicate) {
+                impl #generic Mapper<& #tyx> for __UnaryPred {
+                    type Output = #tyout;
+                    type NextMapper = Self;
+                    fn map(self, value: & #tyx) -> (Self::Output, Self::NextMapper) {
                         let f = | #mutx #x : & #tyx | -> #tyout #body;
-                        (f(testee), self)
+                        (f(value), self)
                     }
                 }
             )
@@ -327,7 +328,7 @@ pub fn unary_pred(input: TokenStream) -> TokenStream {
     );
     quote!(
         {
-            use ::tuplez::predicate::UnaryPredicate;
+            use ::tuplez::foreach::Mapper;
             #[derive(Copy, Clone, Debug)]
             struct __UnaryPred;
             #(#rules)*

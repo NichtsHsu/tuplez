@@ -833,7 +833,7 @@ pub use tuplez_macros::apply;
 /// and then combine them in the [`unary_pred!`](crate::unary_pred!) macro to test the tuple:
 ///
 /// ```
-/// use tuplez::{unary_pred, tuple, TupleLike};
+/// use tuplez::{tuple, TupleLike, unary_pred};
 ///
 /// let tup = tuple!(1, "2", |x: i32| x >= 0);
 /// let result = tup.all(
@@ -847,4 +847,26 @@ pub use tuplez_macros::apply;
 /// ```
 ///
 /// It is allowed to add commas or semicolons as separators between rules. Sometimes this may look better.
+///
+/// # As a [`Mapper`](crate::foreach::Mapper)
+///
+/// In fact, this macro does not directly implement [`UnaryPredicate<T>`](crate::predicate::UnaryPredicate) for the
+/// underlying type. Instead, it implements [`Mapper<&T, Output=bool>`](crate::foreach::Mapper).
+///
+/// Therefore, you can definitely use it as a [`Mapper`](crate::foreach::Mapper) like this:
+///
+/// ```
+/// use tuplez::{tuple, TupleLike, unary_pred};
+///
+/// let tup = tuple!(Some(1), "", |x: i32| x == 0);
+/// let result = tup.as_ref().foreach(
+///     unary_pred! {
+///         |x: Option<i32>| { x.is_some() }
+///         |x: &str| { !x.is_empty() }
+///         <T: Fn(i32) -> bool> |f: T| { f(1) }
+///     }
+/// );
+///
+/// assert_eq!(result, tuple!(true, false, false));
+/// ```
 pub use tuplez_macros::unary_pred;

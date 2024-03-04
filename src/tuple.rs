@@ -14,7 +14,7 @@ use std::ops::{
 ///
 /// Compared with [`Tuple`] type, the unit type does not implement the [`Poppable`] trait.
 ///
-/// Suggestion: Use the parameterless [`tuple!`](crate::tuple!) macro to create an unit:
+/// Suggestion: Use the parameterless [`tuple!`](crate::tuple!) macro to create a unit:
 ///
 /// ```
 /// use tuplez::tuple;
@@ -220,7 +220,7 @@ pub struct Unit;
 /// assert_eq!(unit, tuple!());
 /// assert_eq!(hello, "hello");
 ///
-/// // _ = unit.pop()                   // Error: cannot pop an `Unit`
+/// // _ = unit.pop()                   // Error: cannot pop a `Unit`
 /// ```
 ///
 /// The [`take!`](crate::take!) macro can take out an element by its index or type:
@@ -1038,7 +1038,7 @@ pub trait TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::{unary_pred, tuple, TupleLike};
+    /// use tuplez::{tuple, TupleLike, unary_pred};
     ///
     /// let predicate = unary_pred! {
     ///     |x: i32| { (0..10).contains(x) },
@@ -1073,7 +1073,7 @@ pub trait TupleLike {
     /// # Example
     ///
     /// ```
-    /// use tuplez::{unary_pred, tuple, TupleLike};
+    /// use tuplez::{tuple, TupleLike, unary_pred};
     ///
     /// let predicate = unary_pred! {
     ///     |x: i32| { (0..10).contains(x) },
