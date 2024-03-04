@@ -805,7 +805,7 @@ pub use tuplez_macros::apply;
 /// Generic = [Lifetime1, Lifetime2, ...] [Type1 [: Bound1], Type2 [: Bound2], ...]
 /// Rule    = [ < Generic > ] | Variable : InputType | { Body } [,] [;]
 ///
-/// unary_pred!( OutputType; [Rule1 Rule2 ... ] )
+/// unary_pred!( [Rule1 Rule2 ... ] )
 /// ```
 ///
 /// # Explanation
