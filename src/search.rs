@@ -256,10 +256,9 @@ where
     Other1: ReplaceWith<Other2, Searched>,
     Other2: TupleLike,
 {
-    fn replace_with(&mut self, rhs: Tuple<First, Other2>) -> Tuple<First, Other2> {
-        let elem = std::mem::replace(&mut self.0, rhs.0);
-        let replaced = ReplaceWith::replace_with(&mut self.1, rhs.1);
-        Tuple(elem, replaced)
+    fn replace_with(&mut self, mut rhs: Tuple<First, Other2>) -> Tuple<First, Other2> {
+        ReplaceWith::swap_with(self, &mut rhs);
+        rhs
     }
 
     fn swap_with(&mut self, rhs: &mut Tuple<First, Other2>) {
@@ -273,8 +272,9 @@ where
     T: TupleLike,
     Other: ReplaceWith<T, Result>,
 {
-    fn replace_with(&mut self, rhs: T) -> T {
-        ReplaceWith::replace_with(&mut self.1, rhs)
+    fn replace_with(&mut self, mut rhs: T) -> T {
+        ReplaceWith::swap_with(&mut self.1, &mut rhs);
+        rhs
     }
 
     fn swap_with(&mut self, rhs: &mut T) {
