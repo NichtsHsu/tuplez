@@ -3,6 +3,7 @@
 #![cfg_attr(feature = "any_array", feature(maybe_uninit_uninit_array))]
 #![cfg_attr(feature = "any_array", feature(maybe_uninit_array_assume_init))]
 #![cfg_attr(feature = "any_array", feature(maybe_uninit_uninit_array_transpose))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Tuples represented in recursive form rather than parallel form.
 //!
@@ -126,6 +127,7 @@ mod tupleize;
 mod any_array;
 
 #[cfg(feature = "unwrap")]
+#[cfg_attr(docsrs, doc(cfg(feature = "unwrap")))]
 pub mod unwrap;
 
 pub use tuple::*;

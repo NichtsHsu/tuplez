@@ -10,8 +10,6 @@ use crate::{Tuple, TupleLike, Unit};
 
 /// Indicate that a type is a wrapper of a value and can be unwrapped into it.
 ///
-/// Only available if the `unwrap` feature is enabled (enabled by default).
-///
 /// [`Unwrap`] is implemented by default for four types:
 /// * [`Option<T>`](std::option::Option)
 /// * [`Result<T, E>`](std::result::Result)
@@ -19,6 +17,7 @@ use crate::{Tuple, TupleLike, Unit};
 /// * [`Tuple<T0, T1, ... Tn>`](crate::Tuple) if all types `T0`, `T1`, ... `Tn` implement [`Unwrap`].
 ///
 /// Implement [`Unwrap`] for your own wrapper types so that a [`Tuple`] containing your wrappers can be [`unwrap()`](Unwrap::unwrap()).
+#[cfg_attr(docsrs, doc(cfg(feature = "unwrap")))]
 pub trait Unwrap {
     /// Type of the contained value.
     type UnwrapOutput;
@@ -66,8 +65,6 @@ pub trait Unwrap {
 
 /// Indicate that a type is a wrapper of a value and can be unwrapped into it or the default value.
 ///
-/// Only available if the `unwrap` feature is enabled (enabled by default).
-///
 /// Unlike [`Unwrap`], the trait [`UnwrapOrDefault`] indicates that when the wrapper does not contain a value,
 /// it's able to create a default value instead of panic.
 ///
@@ -79,6 +76,7 @@ pub trait Unwrap {
 ///
 /// Implement [`UnwrapOrDefault`] for your own wrapper types so that a [`Tuple`] containing your wrappers can
 /// be [`unwrap_or_default()`](UnwrapOrDefault::unwrap_or_default()).
+#[cfg_attr(docsrs, doc(cfg(feature = "unwrap")))]
 pub trait UnwrapOrDefault {
     /// Type of the contained value.
     type UnwrapOutput;

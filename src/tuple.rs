@@ -1479,8 +1479,6 @@ pub trait TupleLike {
     /// Convert `Tuple<Wrapper0<T0>, Wrapper1<T1>, ... Wrappern<Tn>>` to `Tuple<T0, T1, ..., Tn>`,
     /// when all element types `Wrapper0`, `Wrapper1` ... `Wrappern` implement [`Unwrap`].
     ///
-    /// Only available if the `unwrap` feature is enabled (enabled by default).
-    ///
     /// Because this function may panic, its use is generally discouraged. Instead,
     /// use [`unwrap_or_default()`](TupleLike::unwrap_or_default()) or
     /// [`try_unwrap()`](TupleLike::try_unwrap()).
@@ -1498,6 +1496,7 @@ pub trait TupleLike {
     /// assert_eq!(tup.unwrap(), tuple!(1, 3.14, "hello"));
     /// ```
     #[cfg(feature = "unwrap")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unwrap")))]
     fn unwrap(self) -> Self::UnwrapOutput
     where
         Self: Unwrap + Sized,
@@ -1506,8 +1505,6 @@ pub trait TupleLike {
     }
 
     /// Check if self can be safely [`unwrap()`](TupleLike::unwrap()).
-    ///
-    /// Only available if the `unwrap` feature is enabled (enabled by default).
     ///
     /// # Example
     ///
@@ -1518,6 +1515,7 @@ pub trait TupleLike {
     /// assert_eq!(tuple!(None::<i32>, Some(3.14), Err::<&str, ()>(())).has_value(), false);
     /// ```
     #[cfg(feature = "unwrap")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unwrap")))]
     fn has_value(&self) -> bool
     where
         Self: Unwrap,
@@ -1531,8 +1529,6 @@ pub trait TupleLike {
     /// Unlike [`unwrap()`](TupleLike::unwrap()), if an element does not contain a value, use the
     /// default value instead of panic.
     ///
-    /// Only available if the `unwrap` feature is enabled (enabled by default).
-    ///
     /// # Example
     ///
     /// ```
@@ -1542,6 +1538,7 @@ pub trait TupleLike {
     /// assert_eq!(tup.unwrap_or_default(), tuple!(1, 0.0, "hello"));
     /// ```
     #[cfg(feature = "unwrap")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unwrap")))]
     fn unwrap_or_default(self) -> Self::UnwrapOutput
     where
         Self: UnwrapOrDefault + Sized,
@@ -1551,8 +1548,6 @@ pub trait TupleLike {
 
     /// Convert `Tuple<Wrapper0<T0>, Wrapper1<T1>, ... Wrappern<Tn>>` to `Option<Tuple<T0, T1, ..., Tn>>`,
     /// when all element types `Wrapper0`, `Wrapper1` ... `Wrappern` implement [`Unwrap`].
-    ///
-    /// Only available if the `unwrap` feature is enabled (enabled by default).
     ///
     /// # Example
     ///
@@ -1565,6 +1560,7 @@ pub trait TupleLike {
     /// assert_eq!(tup2.try_unwrap(), None);
     /// ```
     #[cfg(feature = "unwrap")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unwrap")))]
     fn try_unwrap(self) -> Option<Self::UnwrapOutput>
     where
         Self: Unwrap + Sized,
