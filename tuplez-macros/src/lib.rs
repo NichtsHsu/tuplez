@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Expr};
+use syn::{parse_macro_input, Data, DeriveInput, Expr, Fields};
 
 mod parser;
 
@@ -333,6 +333,66 @@ pub fn unary_pred(input: TokenStream) -> TokenStream {
             struct __UnaryPred;
             #(#rules)*
             __UnaryPred
+        }
+    )
+    .into()
+}
+
+#[proc_macro_derive(Tupleize)]
+pub fn tupleize_derive(input: TokenStream) -> TokenStream {
+    let DeriveInput {
+        attrs: _,
+        vis: _,
+        ident,
+        generics,
+        data,
+    } = parse_macro_input!(input as DeriveInput);
+
+    let Data::Struct(data) = data else {
+        return syn::Error::new(ident.span(), "expected struct")
+            .to_compile_error()
+            .into();
+    };
+    let (tuple_ty, from_tuple, to_tuple) = data.fields.iter().enumerate().rev().fold(
+        (quote!(tuplez::Unit), quote!(), quote!(tuplez::Unit)),
+        |(ty, from, to), (index, field)| {
+            let field_ty = &field.ty;
+            let ty = quote!( ::tuplez::Tuple< #field_ty, #ty > );
+            match &field.ident {
+                Some(ident) => {
+                    let field = quote!(. 1);
+                    let fields = vec![field.clone(); index];
+                    let element = quote!( tuple #(#fields)* . 0);
+                    let from = quote!( #ident: #element, #from );
+                    let to = quote!( ::tuplez::Tuple( self. #ident, #to) );
+                    (ty, from, to)
+                }
+                None => {
+                    let field = quote!(. 1);
+                    let fields = vec![field.clone(); index];
+                    let from = quote!( tuple #(#fields)* . 0, #from );
+                    let index = syn::Index::from(index);
+                    let to = quote!( ::tuplez::Tuple( self. #index, #to) );
+                    (ty, from, to)
+                }
+            }
+        },
+    );
+    let from_tuple = match &data.fields {
+        Fields::Named(_) => quote!( Self { #from_tuple } ),
+        Fields::Unnamed(_) => quote!( Self(#from_tuple) ),
+        Fields::Unit => quote!(Self),
+    };
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    quote!(
+        impl #impl_generics ::tuplez::Tupleize for #ident #ty_generics #where_clause {
+            type Equivalent = #tuple_ty;
+            fn tupleize(self) -> Self::Equivalent {
+                #to_tuple
+            }
+            fn from_tuple(tuple: Self::Equivalent) -> Self {
+                #from_tuple
+            }
         }
     )
     .into()

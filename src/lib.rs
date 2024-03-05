@@ -120,6 +120,7 @@ pub mod ops;
 pub mod predicate;
 pub mod search;
 mod tuple;
+mod tupleize;
 
 #[cfg(feature = "any_array")]
 mod any_array;
@@ -128,6 +129,8 @@ mod any_array;
 pub mod unwrap;
 
 pub use tuple::*;
+
+pub use tupleize::Tupleize;
 
 #[cfg(feature = "any_array")]
 pub use any_array::*;
@@ -870,3 +873,6 @@ pub use tuplez_macros::apply;
 /// assert_eq!(result, tuple!(true, false, false));
 /// ```
 pub use tuplez_macros::unary_pred;
+
+/// Derive [`Tupleize`] on struct.
+pub use tuplez_macros::Tupleize;
