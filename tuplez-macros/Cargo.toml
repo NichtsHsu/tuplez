@@ -1,6 +1,6 @@
 [package]
 name = "tuplez-macros"
-version = "0.5.1"
+version = "0.5.2"
 description = "Procedural macros implementation of tuplez"
 authors.workspace = true
 license.workspace = true

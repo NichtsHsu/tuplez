@@ -3,8 +3,8 @@ use std::{
     ops::{Add, AddAssign},
 };
 
-use quote::{quote, ToTokens};
-use syn::{parse::Parse, Expr, ExprBlock, Generics, Ident, LitInt, Pat, Token, Type};
+use quote::ToTokens;
+use syn::{parse::Parse, parse_quote, Expr, ExprBlock, Generics, Ident, LitInt, Pat, Token, Type};
 
 pub struct TupleGen(pub Vec<Expr>);
 
@@ -470,7 +470,7 @@ impl Parse for UnaryPredicate {
             }
             rules.push(input.parse()?);
         }
-        let bool_ty = syn::parse2::<Type>(quote!(bool))?;
+        let bool_ty: Type = parse_quote!(bool);
         for r in &mut rules {
             if r.inputs.len() != 1 {
                 return Err(input.error("expected exactly one parameter"));
