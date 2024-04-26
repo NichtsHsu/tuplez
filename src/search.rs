@@ -3,12 +3,13 @@
 //! Check the documentation page of [`Search`] for details.
 
 use crate::{Tuple, TupleLenEqTo, TupleLike, Unit};
+use std::marker::PhantomData;
 
 /// Helper class for [`Search`], indicates that the current element is the one searched for.
 pub struct Searched;
 
 /// Helper class for [`Search`], indicates that the current element is not the one searched for.
-pub struct Searching<Result>(Result);
+pub struct Searching<Result>(PhantomData<Result>);
 
 /// Search for an element of a specific type in a tuple.
 ///

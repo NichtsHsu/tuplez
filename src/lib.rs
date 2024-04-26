@@ -120,6 +120,7 @@ mod macros;
 pub mod ops;
 pub mod predicate;
 pub mod search;
+pub mod subset;
 mod tuple;
 mod tupleize;
 
@@ -575,7 +576,7 @@ pub use tuplez_macros::swap_at;
 /// ```
 ///
 /// You can omit the return type when the return type is the same as the element type.
-/// Note: Do not misunderstand that the return type is automatically deduced or is a `()`.
+/// Note: Do not misunderstand that the return type is automatically inferred or is a `()`.
 ///
 /// ```text
 /// |x: i32| { x + 1 }

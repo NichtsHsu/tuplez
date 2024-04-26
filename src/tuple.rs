@@ -2,6 +2,7 @@
 use crate::unwrap::*;
 use crate::{
     fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*, predicate::*, search::*,
+    subset::*,
 };
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -648,6 +649,88 @@ pub trait TupleLike {
         Self: Search<T, R> + Sized,
     {
         Search::get_mut(self)
+    }
+
+    /// Take out the subset.
+    ///
+    /// There are currently a lot of restrictions: No two elements in the subset can have the same type,
+    /// all the element types of subset have only one occurrence in the superset, and the order
+    /// of the elements of subset must be consistent with the order of the superset.
+    ///
+    /// Add a type annotation to the subset to let [`subset()`](TupleLike::subset()) know.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let tup = tuple!(12, "hello", 24, 3.14, true);
+    /// let subset: tuple_t!(&str, bool) = tup.subset();
+    /// assert_eq!(subset, tuple!("hello", true));
+    ///
+    /// // `i32` appears twice in superset, cannot infer which to use.
+    /// // let subset: tuple_t!(i32, bool) = tup.subset();
+    ///
+    /// // The order of elements in the subset is inconsistent with the superset.
+    /// // Cannot compile.
+    /// // let subset: tuple_t!(bool, &str) = tup.subset();
+    /// ```
+    fn subset<Set, I>(self) -> Set
+    where
+        Self: Subset<Set, I> + Sized,
+        Set: TupleLike,
+    {
+        Subset::subset(self)
+    }
+
+    /// Get a subset, but all its elements are immutable references to the superset's elements.
+    ///
+    /// There are currently a lot of restrictions: No two elements in the subset can have the same type,
+    /// all the element types of subset have only one occurrence in the superset, and the order
+    /// of the elements of subset must be consistent with the order of the superset.
+    ///
+    /// Rust is almost impossible to infer generic types by the return type annotation ,
+    /// so you need to call it like:
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let tup = tuple!(12, "hello", vec![1, 2, 3], 24, 3.14, true);
+    /// let subset = tup.subset_ref::<tuple_t!(&'static str, bool), _>();
+    /// assert_eq!(subset, tuple!(&"hello", &true));
+    /// ```
+    fn subset_ref<Set, I>(&self) -> Set::AsRefOutput<'_>
+    where
+        Self: Subset<Set, I> + Sized,
+        Set: TupleLike,
+    {
+        Subset::subset_ref(self)
+    }
+
+    /// Get a subset, but all its elements are mutable references to the superset's elements.
+    ///
+    /// There are currently a lot of restrictions: No two elements in the subset can have the same type,
+    /// all the element types of subset have only one occurrence in the superset, and the order
+    /// of the elements of subset must be consistent with the order of the superset.
+    ///
+    /// Rust is almost impossible to infer generic types by the return type annotation ,
+    /// so you need to call it like:
+    ///
+    /// ```
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(12, "hello", vec![1, 2, 3], 24, 3.14, true);
+    /// let subset = tup.subset_mut::<tuple_t!(&'static str, bool), _>();
+    /// *get!(subset; 0) = "world";
+    /// *get!(subset; 1) = false;
+    /// assert_eq!(tup, tuple!(12, "world", vec![1, 2, 3], 24, 3.14, false));
+    /// ```
+    fn subset_mut<Set, I>(&mut self) -> Set::AsMutOutput<'_>
+    where
+        Self: Subset<Set, I> + Sized,
+        Set: TupleLike,
+    {
+        Subset::subset_mut(self)
     }
 
     /// Generate a tuple containing immutable references to all elements of the tuple.
