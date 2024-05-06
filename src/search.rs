@@ -216,7 +216,10 @@ pub trait ReplaceWith<T: TupleLike, Result>: TupleLike {
     /// assert_eq!(tup, tuple!(1, Some("hello"), 4, 9.8, 3));
     /// assert_eq!(replaced, tuple!(2, 3.14));
     /// ```
-    fn replace_with(&mut self, rhs: T) -> T;
+    fn replace_with(&mut self, mut rhs: T) -> T {
+        ReplaceWith::swap_with(self, &mut rhs);
+        rhs
+    }
 
     /// Swap a sequence of elements in the tuple with all elements of another tuple.
     ///
@@ -245,10 +248,6 @@ impl<First, Other> ReplaceWith<Unit, Searched> for Tuple<First, Other>
 where
     Other: TupleLike,
 {
-    fn replace_with(&mut self, rhs: Unit) -> Unit {
-        rhs
-    }
-
     fn swap_with(&mut self, _: &mut Unit) {}
 }
 
@@ -257,11 +256,6 @@ where
     Other1: ReplaceWith<Other2, Searched>,
     Other2: TupleLike,
 {
-    fn replace_with(&mut self, mut rhs: Tuple<First, Other2>) -> Tuple<First, Other2> {
-        ReplaceWith::swap_with(self, &mut rhs);
-        rhs
-    }
-
     fn swap_with(&mut self, rhs: &mut Tuple<First, Other2>) {
         std::mem::swap(&mut self.0, &mut rhs.0);
         ReplaceWith::swap_with(&mut self.1, &mut rhs.1);
@@ -273,11 +267,6 @@ where
     T: TupleLike,
     Other: ReplaceWith<T, Result>,
 {
-    fn replace_with(&mut self, mut rhs: T) -> T {
-        ReplaceWith::swap_with(&mut self.1, &mut rhs);
-        rhs
-    }
-
     fn swap_with(&mut self, rhs: &mut T) {
         ReplaceWith::swap_with(&mut self.1, rhs)
     }
