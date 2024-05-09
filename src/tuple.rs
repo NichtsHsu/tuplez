@@ -651,11 +651,9 @@ pub trait TupleLike {
         Search::get_mut(self)
     }
 
-    /// Take out the subset.
+    /// Take out the subset whose element order is the same as that of the superset.
     ///
-    /// There are currently a lot of restrictions: No two elements in the subset can have the same type,
-    /// all the element types of subset have only one occurrence in the superset, and the order
-    /// of the elements of subset must be consistent with the order of the superset.
+    /// **NOTE**: The subset must have one and only one candidate in the superset.
     ///
     /// Add a type annotation to the subset to let [`subset()`](TupleLike::subset()) know.
     ///
@@ -668,12 +666,21 @@ pub trait TupleLike {
     /// let subset: tuple_t!(&str, bool) = tup.subset();
     /// assert_eq!(subset, tuple!("hello", true));
     ///
-    /// // `i32` appears twice in superset, cannot infer which to use.
+    /// // Two candidates available: `(12, true)` or `(24, true)`.
     /// // let subset: tuple_t!(i32, bool) = tup.subset();
     ///
-    /// // The order of elements in the subset is inconsistent with the superset.
-    /// // Cannot compile.
+    /// // No candidates available.
+    /// // `(true, "hello")` cannot be a candidate, since its element order is
+    /// // different from the superset.
     /// // let subset: tuple_t!(bool, &str) = tup.subset();
+    ///
+    /// // Although `24` is also `i32`, but only `(12, "hello")` is a candidate.
+    /// let subset: tuple_t!(i32, &str) = tup.subset();
+    /// assert_eq!(subset, tuple!(12, "hello"));
+    ///
+    /// // It's OK to pick all `i32`s since there is only one candidate.
+    /// let subset: tuple_t!(i32, i32) = tup.subset();
+    /// assert_eq!(subset, tuple!(12, 24));
     /// ```
     fn subset<Set, I>(self) -> Set
     where
@@ -683,11 +690,10 @@ pub trait TupleLike {
         Subset::subset(self)
     }
 
-    /// Get a subset, but all its elements are immutable references to the superset's elements.
+    /// Similar to [subset()](TupleLike::subset()),
+    /// but all its elements are immutable references to the superset's elements.
     ///
-    /// There are currently a lot of restrictions: No two elements in the subset can have the same type,
-    /// all the element types of subset have only one occurrence in the superset, and the order
-    /// of the elements of subset must be consistent with the order of the superset.
+    /// **NOTE**: The subset must have one and only one candidate in the superset.
     ///
     /// Rust is almost impossible to infer generic types by the return type annotation ,
     /// so you need to call it like:
@@ -707,11 +713,10 @@ pub trait TupleLike {
         Subset::subset_ref(self)
     }
 
-    /// Get a subset, but all its elements are mutable references to the superset's elements.
+    /// Similar to [subset()](TupleLike::subset()),
+    /// but all its elements are mutable references to the superset's elements.
     ///
-    /// There are currently a lot of restrictions: No two elements in the subset can have the same type,
-    /// all the element types of subset have only one occurrence in the superset, and the order
-    /// of the elements of subset must be consistent with the order of the superset.
+    /// **NOTE**: The subset must have one and only one candidate in the superset.
     ///
     /// Rust is almost impossible to infer generic types by the return type annotation ,
     /// so you need to call it like:
