@@ -123,6 +123,7 @@ pub mod predicate;
 pub mod search;
 mod tuple;
 mod tupleize;
+pub mod uninit;
 
 #[cfg(feature = "any_array")]
 mod any_array;
