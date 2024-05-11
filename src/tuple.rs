@@ -1161,7 +1161,7 @@ pub trait TupleLike {
     /// use tuplez::{get, tuple, TupleLike};
     ///
     /// let mut tup = tuple!(1, 3.14, "hello", vec![1, 2, 3]);
-    /// let tup_ptr = tup.as_mut();
+    /// let tup_ptr = tup.as_mut_ptr();
     /// let v = unsafe { &mut *get!(tup_ptr; 3) };
     /// v.push(4);
     /// assert_eq!(v.len(), 4);
