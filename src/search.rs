@@ -526,10 +526,7 @@ where
     }
 }
 
-impl<First, Other> ConSubseq<Unit, Complete> for Tuple<First, Other>
-where
-    Other: TupleLike,
-{
+impl ConSubseq<Unit, Complete> for Unit {
     fn con_subseq(self) -> Unit {
         Unit
     }
@@ -543,29 +540,6 @@ where
     }
 
     fn swap_con_subseq(&mut self, _: &mut Unit) {}
-}
-
-impl<First, Other1, Other2> ConSubseq<Tuple<First, Other2>, Complete> for Tuple<First, Other1>
-where
-    Other1: ConSubseq<Other2, Complete>,
-    Other2: TupleLike,
-{
-    fn con_subseq(self) -> Tuple<First, Other2> {
-        Tuple(self.0, ConSubseq::con_subseq(self.1))
-    }
-
-    fn con_subseq_ref(&self) -> <Tuple<First, Other2> as TupleLike>::AsRefOutput<'_> {
-        Tuple(&self.0, ConSubseq::con_subseq_ref(&self.1))
-    }
-
-    fn con_subseq_mut(&mut self) -> <Tuple<First, Other2> as TupleLike>::AsMutOutput<'_> {
-        Tuple(&mut self.0, ConSubseq::con_subseq_mut(&mut self.1))
-    }
-
-    fn swap_con_subseq(&mut self, subseq: &mut Tuple<First, Other2>) {
-        std::mem::swap(&mut self.0, &mut subseq.0);
-        ConSubseq::swap_con_subseq(&mut self.1, &mut subseq.1);
-    }
 }
 
 impl<First, Other, T, I> ConSubseq<T, Unused<I>> for Tuple<First, Other>
@@ -587,5 +561,68 @@ where
 
     fn swap_con_subseq(&mut self, subseq: &mut T) {
         ConSubseq::swap_con_subseq(&mut self.1, subseq)
+    }
+}
+
+impl<First, Other, I> ConSubseq<Tuple<First, Unit>, Used<I>> for Tuple<First, Other>
+where
+    Other: ConSubseq<Unit, I>,
+{
+    fn con_subseq(self) -> Tuple<First, Unit> {
+        Tuple(self.0, Unit)
+    }
+
+    fn con_subseq_ref(&self) -> <Tuple<First, Unit> as TupleLike>::AsRefOutput<'_> {
+        Tuple(&self.0, Unit)
+    }
+
+    fn con_subseq_mut(&mut self) -> <Tuple<First, Unit> as TupleLike>::AsMutOutput<'_> {
+        Tuple(&mut self.0, Unit)
+    }
+
+    fn swap_con_subseq(&mut self, subseq: &mut Tuple<First, Unit>) {
+        std::mem::swap(&mut self.0, &mut subseq.0);
+    }
+}
+
+impl<First1, First2, Other1, Other2, I> ConSubseq<Tuple<First1, Tuple<First2, Other2>>, Used<I>>
+    for Tuple<First1, Other1>
+where
+    Other1: ConSubseq<Tuple<First2, Other2>, Used<I>>,
+    Other2: TupleLike,
+{
+    fn con_subseq(self) -> Tuple<First1, Tuple<First2, Other2>> {
+        Tuple(self.0, ConSubseq::con_subseq(self.1))
+    }
+
+    fn con_subseq_ref(
+        &self,
+    ) -> <Tuple<First1, Tuple<First2, Other2>> as TupleLike>::AsRefOutput<'_> {
+        Tuple(&self.0, ConSubseq::con_subseq_ref(&self.1))
+    }
+
+    fn con_subseq_mut(
+        &mut self,
+    ) -> <Tuple<First1, Tuple<First2, Other2>> as TupleLike>::AsMutOutput<'_> {
+        Tuple(&mut self.0, ConSubseq::con_subseq_mut(&mut self.1))
+    }
+
+    fn swap_con_subseq(&mut self, subseq: &mut Tuple<First1, Tuple<First2, Other2>>) {
+        std::mem::swap(&mut self.0, &mut subseq.0);
+        ConSubseq::swap_con_subseq(&mut self.1, &mut subseq.1);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_unit_subsequence() {
+        use tuplez::{search::ConSubseq, search::Subseq, tuple, tuple_t};
+
+        let tup = tuple!(1, 2.5, "hello");
+        let subseq: tuple_t!() = tup.subseq();
+        assert_eq!(subseq, tuple!());
+        let subseq: tuple_t!() = tup.con_subseq();
+        assert_eq!(subseq, tuple!());
     }
 }
