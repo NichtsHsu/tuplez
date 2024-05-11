@@ -308,7 +308,7 @@ pub struct Unit;
 /// let subseq: tuple_t!(i32, bool) = tup.con_subseq();
 /// assert_eq!(subseq, tuple!(24, true));
 /// ```
-/// 
+///
 /// There are also many methods about subsequence: [`subseq_ref()`](TupleLike::subseq_ref()),
 /// [`subseq_mut()`](TupleLike::subseq_mut()), [`swap_subseq()`](TupleLike::swap_subseq()),
 /// [`replace_subseq()`](TupleLike::replace_subseq()), [`con_subseq_ref()`](TupleLike::con_subseq_ref()),
@@ -629,6 +629,8 @@ pub trait TupleLike {
     ///
     /// Add a type annotation to the searched element to let [`take()`](TupleLike::take()) know which one you want.
     ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
     /// If you want to take out the element at a specific index, see [`take!`](crate::take!).
     ///
     /// If you want to take out the first or last element, see [`pop()`][TupleLike::pop()].
@@ -665,6 +667,8 @@ pub trait TupleLike {
     ///
     /// Add a type annotation to the searched element to let [`get_ref()`](TupleLike::get_ref()) know which one you want.
     ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
     /// If you want to get the element by its index, see [`get!`](crate::get!);
     ///
     /// # Example
@@ -687,6 +691,8 @@ pub trait TupleLike {
     ///
     /// Add a type annotation to the searched element to let [`get_mut()`](TupleLike::get_mut()) know which one you want.
     ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
     /// If you want to get the element by its index, see [`get!`](crate::get!);
     ///
     /// # Example
@@ -704,6 +710,54 @@ pub trait TupleLike {
         Self: Search<T, I> + Sized,
     {
         Search::get_mut(self)
+    }
+
+    /// Swap a specific element of the same type with another value.
+    ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
+    /// let mut s = "world";
+    /// tup.swap(&mut s);
+    /// assert_eq!(tup, tuple!(3.14, "world", 5, [1, 2, 3]));
+    /// assert_eq!(s, "hello");
+    /// ```
+    fn swap<T, I>(&mut self, value: &mut T)
+    where
+        Self: Search<T, I>,
+    {
+        Search::swap(self, value)
+    }
+
+    /// Replace a specific element of the same type with another value.
+    ///
+    /// Return the replaced value.
+    ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
+    /// Hint: If you don’t want to consume the input tuple, then what you are looking
+    /// for might be [`swap()`](TupleLike::swap()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
+    /// let s = tup.replace("world");
+    /// assert_eq!(tup, tuple!(3.14, "world", 5, [1, 2, 3]));
+    /// assert_eq!(s, "hello");
+    /// ```
+    fn replace<T, I>(&mut self, value: T) -> T
+    where
+        Self: Search<T, I>,
+    {
+        Search::replace(self, value)
     }
 
     /// Take out a subsequence.
@@ -1024,7 +1078,7 @@ pub trait TupleLike {
 
     #[deprecated(
         since = "0.10.0",
-        note = "Use swap_subseq() or swap_con_subseq() instead"
+        note = "Use swap(), swap_subseq() or swap_con_subseq() instead"
     )]
     fn swap_with<Seq, I>(&mut self, subseq: &mut Seq)
     where
@@ -1036,7 +1090,7 @@ pub trait TupleLike {
 
     #[deprecated(
         since = "0.10.0",
-        note = "Use replace_subseq() or replace_con_subseq() instead"
+        note = "Use replace(), replace_subseq() or replace_con_subseq() instead"
     )]
     fn replace_with<Seq, I>(&mut self, subseq: Seq) -> Seq
     where

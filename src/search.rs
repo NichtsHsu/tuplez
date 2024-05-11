@@ -25,6 +25,8 @@ pub trait Search<T, I>: TupleLike {
     ///
     /// Add a type annotation to the searched element to let [`take()`](TupleLike::take()) know which one you want.
     ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
     /// If you want to take out the element at a specific index, see [`take!`](crate::take!).
     ///
     /// If you want to take out the first or last element, see [`pop()`][TupleLike::pop()].
@@ -59,6 +61,8 @@ pub trait Search<T, I>: TupleLike {
     ///
     /// Add a type annotation to the searched element to let [`get_ref()`](TupleLike::get_ref()) know which one you want.
     ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
     /// If you want to get the element by its index, see [`get!`](crate::get!);
     ///
     /// Hint: The [`TupleLike`] trait provides the [`get_ref()`](TupleLike::get_ref()) method as the wrapper
@@ -79,6 +83,8 @@ pub trait Search<T, I>: TupleLike {
     ///
     /// Add a type annotation to the searched element to let [`get_mut()`](TupleLike::get_mut()) know which one you want.
     ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
     /// If you want to get the element by its index, see [`get!`](crate::get!);
     ///
     /// Hint: The [`TupleLike`] trait provides the [`get_mut()`](TupleLike::get_mut()) method as the wrapper
@@ -95,6 +101,55 @@ pub trait Search<T, I>: TupleLike {
     /// assert_eq!(tup, tuple!(3.14, "world", 5, [1, 2, 3]));
     /// ```
     fn get_mut(&mut self) -> &mut T;
+
+    /// Swap a specific element of the same type with another value.
+    ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`swap()`](TupleLike::swap()) method as the wrapper
+    /// for this [`swap()`](Search::swap()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
+    /// let mut s = "world";
+    /// tup.swap(&mut s);
+    /// assert_eq!(tup, tuple!(3.14, "world", 5, [1, 2, 3]));
+    /// assert_eq!(s, "hello");
+    /// ```
+    fn swap(&mut self, value: &mut T) {
+        std::mem::swap(Search::get_mut(self), value);
+    }
+
+    /// Replace a specific element of the same type with another value.
+    ///
+    /// Return the replaced value.
+    ///
+    /// **NOTE**: The type of this element must exist only once in the tuple.
+    ///
+    /// Hint: If you don’t want to consume the input tuple, then what you are looking
+    /// for might be [`swap()`](TupleLike::swap()).
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`replace()`](TupleLike::replace()) method as the wrapper
+    /// for this [`replace()`](Search::replace()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(3.14, "hello", 5, [1, 2, 3]);
+    /// let s = tup.replace("world");
+    /// assert_eq!(tup, tuple!(3.14, "world", 5, [1, 2, 3]));
+    /// assert_eq!(s, "hello");
+    /// ```
+    fn replace(&mut self, mut value: T) -> T {
+        Search::swap(self, &mut value);
+        value
+    }
 }
 
 impl<First, Other> Search<First, Complete> for Tuple<First, Other>
