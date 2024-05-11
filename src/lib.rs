@@ -37,6 +37,7 @@
 //! * [Push element](TupleLike::push()) to a tuple or [pop element](TupleLike::pop()) from a tuple.
 //! * [Join](TupleLike::join()) two tuples or [split](split_at!) a tuple into two parts.
 //! * [Rich tuple operations](TupleLike), e.g.: [reverse](TupleLike::rev()), [left rotate](TupleLike::rot_l()), [zip](TupleLike::zip()).
+//! * [Get subsequences](Tuple#get-subsequences).
 //! * If all element types implement a `Trait` (e.g. `Eq`, `Add`), then the [`Tuple`] also implement that `Trait`.
 //! [See which traits are supported and learn how to implement your custom traits for `Tuple`](Tuple#trait-implementations-on-tuple).
 //! * [Traverse all elements](Tuple#traverse-tuples) of a tuple, or [fold](Tuple#fold-tuples) a tuple.
@@ -120,7 +121,6 @@ mod macros;
 pub mod ops;
 pub mod predicate;
 pub mod search;
-pub mod subset;
 mod tuple;
 mod tupleize;
 

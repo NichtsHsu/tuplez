@@ -5,16 +5,19 @@
 use crate::{Tuple, TupleLenEqTo, TupleLike, Unit};
 use std::marker::PhantomData;
 
-/// Helper class for [`Search`], indicates that the current element is the one searched for.
-pub struct Searched;
+/// Helper type indicates that the search has been completed.
+pub struct Complete;
 
-/// Helper class for [`Search`], indicates that the current element is not the one searched for.
-pub struct Searching<Result>(PhantomData<Result>);
+/// Helper type indicates that current element is excluded by the search result.
+pub struct Unused<I>(PhantomData<I>);
+
+/// Helper type indicates that current element is included by the search result.
+pub struct Used<T>(PhantomData<T>);
 
 /// Search for an element of a specific type in a tuple.
 ///
 /// There is currently a restriction: only one element in the tuple can be of the type being searched.
-pub trait Search<T, Result>: TupleLike {
+pub trait Search<T, I>: TupleLike {
     /// The type of the remainder of the tuple after taking out the searched element.
     type TakeRemainder: TupleLike;
 
@@ -94,7 +97,7 @@ pub trait Search<T, Result>: TupleLike {
     fn get_mut(&mut self) -> &mut T;
 }
 
-impl<First, Other> Search<First, Searched> for Tuple<First, Other>
+impl<First, Other> Search<First, Complete> for Tuple<First, Other>
 where
     Other: TupleLike,
 {
@@ -113,9 +116,9 @@ where
     }
 }
 
-impl<First, Other, T, Result> Search<T, Searching<Result>> for Tuple<First, Other>
+impl<First, Other, T, I> Search<T, Unused<I>> for Tuple<First, Other>
 where
-    Other: Search<T, Result>,
+    Other: Search<T, I>,
 {
     type TakeRemainder = Tuple<First, Other::TakeRemainder>;
 
@@ -134,7 +137,7 @@ where
 }
 
 /// replace tail elements of the tuple.
-pub trait TailReplaceable<T: TupleLike, Result>: TupleLike {
+pub trait TailReplaceable<T: TupleLike, I>: TupleLike {
     /// The type of the tuple after replacing its elements.
     type ReplaceOutput: TupleLike;
 
@@ -160,7 +163,7 @@ pub trait TailReplaceable<T: TupleLike, Result>: TupleLike {
     fn replace_tail(self, rhs: T) -> (Self::ReplaceOutput, Self::Replaced);
 }
 
-impl<T, U> TailReplaceable<T, Searched> for U
+impl<T, U> TailReplaceable<T, Complete> for U
 where
     T: TupleLenEqTo<U>,
     U: TupleLike,
@@ -173,10 +176,10 @@ where
     }
 }
 
-impl<First, Other, T, Result> TailReplaceable<T, Searching<Result>> for Tuple<First, Other>
+impl<First, Other, T, I> TailReplaceable<T, Unused<I>> for Tuple<First, Other>
 where
     T: TupleLike,
-    Other: TailReplaceable<T, Result>,
+    Other: TailReplaceable<T, I>,
 {
     type ReplaceOutput = Tuple<First, Other::ReplaceOutput>;
     type Replaced = Other::Replaced;
@@ -187,87 +190,402 @@ where
     }
 }
 
-/// Replace a sequence of elements in the tuple with all elements of another tuple.
-pub trait ReplaceWith<T: TupleLike, Result>: TupleLike {
-    /// Replace a sequence of elements in the tuple with all elements of another tuple.
+/// Search for subsequences of tuples.
+///
+/// The subsequence must have one and only one candidate in the supersequence.
+pub trait Subseq<Seq, I>: TupleLike
+where
+    Seq: TupleLike,
+{
+    /// Take out a subsequence.
     ///
-    /// The tuple will search for a sequence of elements whose types are exactly the same as
-    /// the sequence of all the elements of the provided tuple, and then replace the elements
-    /// of this sequence with the elements of the provided tuple.
+    /// **NOTE**: The subsequence must have one and only one candidate in the supersequence.
     ///
-    /// This means that this method does not change the type of the tuple, which is why this
-    /// method requires `&mut self` instead of `self`.
+    /// Add a type annotation to the subsequence to let [`subseq()`](Subseq::subseq()) know.
     ///
-    /// Finally, it returns the sequence of the replaced elements.
-    ///
-    /// NOTE: If you don't want to consume the input tuple,
-    /// then what you are looking for might be [`swap_with()`](ReplaceWith::swap_with()).
-    ///
-    /// Hint: The [`TupleLike`] trait provides the [`replace_with()`](TupleLike::replace_with()) method as the wrapper
-    /// for this [`replace_with()`](ReplaceWith::replace_with()) method.
+    /// Hint: The [`TupleLike`] trait provides the [`subseq()`](TupleLike::subseq()) method as the wrapper
+    /// for this [`subseq()`](Subseq::subseq()) method.
     ///
     /// # Example
     ///
     /// ```
-    /// use tuplez::{tuple, TupleLike};
+    /// use tuplez::{tuple, TupleLike, tuple_t};
     ///
-    /// let mut tup = tuple!(1, Some("hello"), 2, 3.14, 3);
-    /// let replaced = tup.replace_with(tuple!(4, 9.8));
-    /// assert_eq!(tup, tuple!(1, Some("hello"), 4, 9.8, 3));
-    /// assert_eq!(replaced, tuple!(2, 3.14));
+    /// let tup = tuple!(12, "hello", 24, 3.14, true);
+    /// let subseq: tuple_t!(&str, bool) = tup.subseq();
+    /// assert_eq!(subseq, tuple!("hello", true));
+    ///
+    /// // Two candidates available: `(12, true)` or `(24, true)`.
+    /// // let subseq: tuple_t!(i32, bool) = tup.subseq();
+    ///
+    /// // No candidates available.
+    /// // `(true, "hello")` cannot be a candidate, since its element order is
+    /// // different from the supersequence.
+    /// // let subseq: tuple_t!(bool, &str) = tup.subseq();
+    ///
+    /// // Although `24` is also `i32`, but only `(12, "hello")` is a candidate.
+    /// let subseq: tuple_t!(i32, &str) = tup.subseq();
+    /// assert_eq!(subseq, tuple!(12, "hello"));
+    ///
+    /// // It's OK to pick all `i32`s since there is only one candidate.
+    /// let subseq: tuple_t!(i32, i32) = tup.subseq();
+    /// assert_eq!(subseq, tuple!(12, 24));
     /// ```
-    fn replace_with(&mut self, mut rhs: T) -> T {
-        ReplaceWith::swap_with(self, &mut rhs);
-        rhs
-    }
+    fn subseq(self) -> Seq;
 
-    /// Swap a sequence of elements in the tuple with all elements of another tuple.
+    /// Similar to [`subseq()`](Subseq::subseq()),
+    /// but all its elements are immutable references to the supersequence's elements.
     ///
-    /// The tuple will search for a sequence of elements whose types are exactly the same as
-    /// the sequence of all the elements of the provided tuple, and then swaps the elements
-    /// of this sequence with the elements of the provided tuple.
+    /// **NOTE**: The subsequence must have one and only one candidate in the supersequence.
     ///
-    /// Hint: The [`TupleLike`] trait provides the [`swap_with()`](TupleLike::swap_with()) method as the wrapper
-    /// for this [`swap_with()`](ReplaceWith::swap_with()) method.
+    /// Hint: The [`TupleLike`] trait provides the [`subseq_ref()`](TupleLike::subseq_ref()) method as
+    /// the wrapper for this [`subseq_ref()`](Subseq::subseq_ref()) method.
+    ///
+    /// Rust is almost impossible to infer generic types by the return type annotation,
+    /// so you need to call it like:
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let tup = tuple!(12, "hello", vec![1, 2, 3], 24, 3.14, true);
+    /// let subseq = tup.subseq_ref::<tuple_t!(&'static str, bool), _>();
+    /// assert_eq!(subseq, tuple!(&"hello", &true));
+    /// ```
+    fn subseq_ref(&self) -> Seq::AsRefOutput<'_>;
+
+    /// Similar to [`subseq()`](Subseq::subseq()),
+    /// but all its elements are mutable references to the supersequence's elements.
+    ///
+    /// **NOTE**: The subsequence must have one and only one candidate in the supersequence.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`subseq_mut()`](TupleLike::subseq_mut()) method as
+    /// the wrapper for this [`subseq_mut()`](Subseq::subseq_mut()) method.
+    ///
+    /// Rust is almost impossible to infer generic types by the return type annotation,
+    /// so you need to call it like:
+    ///
+    /// ```
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(12, "hello", vec![1, 2, 3], 24, 3.14, true);
+    /// let subseq = tup.subseq_mut::<tuple_t!(&'static str, bool), _>();
+    /// *get!(subseq; 0) = "world";
+    /// *get!(subseq; 1) = false;
+    /// assert_eq!(tup, tuple!(12, "world", vec![1, 2, 3], 24, 3.14, false));
+    /// ```
+    fn subseq_mut(&mut self) -> Seq::AsMutOutput<'_>;
+
+    /// Swap elements with a subsequence.
+    ///
+    /// See [`subseq()`](Subseq::subseq()) to see which inputs are subsequence.
+    ///
+    /// **NOTE**: The subsequence must have one and only one candidate in the supersequence.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`swap_subseq()`](TupleLike::swap_subseq()) method as
+    /// the wrapper for this [`swap_subseq()`](Subseq::swap_subseq()) method.
     ///
     /// # Example
     ///
     /// ```
     /// use tuplez::{tuple, TupleLike};
     ///
-    /// let mut tup = tuple!(1, Some("hello"), 2, 3.14, 3);
-    /// let mut tup2 = tuple!(4, 9.8);
-    /// tup.swap_with(&mut tup2);
-    /// assert_eq!(tup, tuple!(1, Some("hello"), 4, 9.8, 3));
-    /// assert_eq!(tup2, tuple!(2, 3.14));
+    /// let mut tup = tuple!(1, Some("hello"), 2, Some(()), 3.14, 3);
+    /// let mut tup2 = tuple!(Some("world"), 9.8);
+    /// tup.swap_subseq(&mut tup2);
+    /// assert_eq!(tup, tuple!(1, Some("world"), 2, Some(()), 9.8, 3));
+    /// assert_eq!(tup2, tuple!(Some("hello"), 3.14));
     /// ```
-    fn swap_with(&mut self, rhs: &mut T);
+    fn swap_subseq(&mut self, subseq: &mut Seq);
+
+    /// Replace elements with a subsequence.
+    ///
+    /// See [`subseq()`](Subseq::subseq()) to see which inputs are subsequence.
+    ///
+    /// **NOTE**: The subsequence must have one and only one candidate in the supersequence.
+    ///
+    /// It returns a subsequence consisting of the replaced elements.
+    ///
+    /// Hint: If you don't want to consume the input tuple,
+    /// then what you are looking for might be [`swap_subseq()`](Subseq::swap_subseq()).
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`replace_subseq()`](TupleLike::replace_subseq()) method as
+    /// the wrapper for this [`replace_subseq()`](Subseq::replace_subseq()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(1, Some("hello"), 2, Some(()), 3.14, 3);
+    /// let replaced = tup.replace_subseq(tuple!(Some("world"), 9.8));
+    /// assert_eq!(tup, tuple!(1, Some("world"), 2, Some(()), 9.8, 3));
+    /// assert_eq!(replaced, tuple!(Some("hello"), 3.14));
+    /// ```
+    fn replace_subseq(&mut self, mut subseq: Seq) -> Seq {
+        Subseq::swap_subseq(self, &mut subseq);
+        subseq
+    }
 }
 
-impl<First, Other> ReplaceWith<Unit, Searched> for Tuple<First, Other>
+impl Subseq<Unit, Complete> for Unit {
+    fn subseq(self) -> Unit {
+        Unit
+    }
+    fn subseq_ref(&self) -> <Unit as TupleLike>::AsRefOutput<'_> {
+        Unit
+    }
+    fn subseq_mut(&mut self) -> <Unit as TupleLike>::AsMutOutput<'_> {
+        Unit
+    }
+    fn swap_subseq(&mut self, _: &mut Unit) {}
+}
+
+impl<First, Other1, Other2, I> Subseq<Tuple<First, Other2>, Used<I>> for Tuple<First, Other1>
+where
+    Other1: TupleLike + Subseq<Other2, I>,
+    Other2: TupleLike,
+{
+    fn subseq(self) -> Tuple<First, Other2> {
+        Tuple(self.0, Subseq::subseq(self.1))
+    }
+
+    fn subseq_ref(&self) -> <Tuple<First, Other2> as TupleLike>::AsRefOutput<'_> {
+        Tuple(&self.0, Subseq::subseq_ref(&self.1))
+    }
+
+    fn subseq_mut(&mut self) -> <Tuple<First, Other2> as TupleLike>::AsMutOutput<'_> {
+        Tuple(&mut self.0, Subseq::subseq_mut(&mut self.1))
+    }
+
+    fn swap_subseq(&mut self, subseq: &mut Tuple<First, Other2>) {
+        std::mem::swap(&mut self.0, &mut subseq.0);
+        Subseq::swap_subseq(&mut self.1, &mut subseq.1);
+    }
+}
+
+impl<First, Other, T, I> Subseq<T, Unused<I>> for Tuple<First, Other>
+where
+    T: TupleLike,
+    Other: TupleLike + Subseq<T, I>,
+{
+    fn subseq(self) -> T {
+        Subseq::subseq(self.1)
+    }
+
+    fn subseq_ref(&self) -> <T as TupleLike>::AsRefOutput<'_> {
+        Subseq::subseq_ref(&self.1)
+    }
+
+    fn subseq_mut(&mut self) -> <T as TupleLike>::AsMutOutput<'_> {
+        Subseq::subseq_mut(&mut self.1)
+    }
+
+    fn swap_subseq(&mut self, subseq: &mut T) {
+        Subseq::swap_subseq(&mut self.1, subseq);
+    }
+}
+
+/// Search for contiguous subsequences of tuples.
+///
+/// Unlike [`Subseq`], this trait requires that all elements of the subsequence are
+/// contiguous in the supersequence.
+///
+/// The contiguous subsequence must have one and only one candidate in the supersequence.
+pub trait ConSubseq<Seq, I>: TupleLike
+where
+    Seq: TupleLike,
+{
+    /// Take out a contiguous subsequence.
+    ///
+    /// Unlike [`subseq()`](Subseq::subseq()), this method requires that all elements of the subsequence are
+    /// contiguous in the supersequence. Sometimes it can do things that [`subseq()`](Subseq::subseq()) can't.
+    ///
+    /// **NOTE**: The contiguous subsequence must have one and only one candidate in the supersequence.
+    ///
+    /// Add a type annotation to the contiguous subsequence to let [`con_subseq()`](ConSubseq::con_subseq()) know.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`con_subseq()`](TupleLike::con_subseq()) method as the wrapper
+    /// for this [`con_subseq()`](ConSubseq::con_subseq()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let tup = tuple!(12, "hello", 24, true, false);
+    ///
+    /// // For `subseq`, 4 candidates available:
+    /// //      `(12, true)`,
+    /// //      `(12, false)`,
+    /// //      `(24, true)`,
+    /// //      `(24, false)`,
+    /// // so this cannot be compiled.
+    /// // let subseq: tuple_t!(i32, bool) = tup.subseq();
+    ///
+    /// // But for `con_subseq`，only `(24, true)` is a candidate.
+    /// let subseq: tuple_t!(i32, bool) = tup.con_subseq();
+    /// assert_eq!(subseq, tuple!(24, true));
+    /// ```
+    fn con_subseq(self) -> Seq;
+
+    /// Similar to [`con_subseq()`](ConSubseq::con_subseq()),
+    /// but all its elements are immutable references to the supersequence's elements.
+    ///
+    /// **NOTE**: The contiguous subsequence must have one and only one candidate in the supersequence.
+    ///
+    /// Rust is almost impossible to infer generic types by the return type annotation,
+    /// so you need to call it like:
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`con_subseq_ref()`](TupleLike::con_subseq_ref()) method
+    /// as the wrapper for this [`con_subseq_ref()`](ConSubseq::con_subseq_ref()) method.
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let tup = tuple!(12, "hello", vec![1, 2, 3], 24, 3.14, true);
+    /// let subseq = tup.con_subseq_ref::<tuple_t!(i32, f32), _>();
+    /// assert_eq!(subseq, tuple!(&24, &3.14));
+    /// ```
+    fn con_subseq_ref(&self) -> Seq::AsRefOutput<'_>;
+
+    /// Similar to [`con_subseq()`](ConSubseq::con_subseq()),
+    /// but all its elements are mutable references to the supersequence's elements.
+    ///
+    /// **NOTE**: The contiguous subsequence must have one and only one candidate in the supersequence.
+    ///
+    /// Rust is almost impossible to infer generic types by the return type annotation,
+    /// so you need to call it like:
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`con_subseq_mut()`](TupleLike::con_subseq_mut()) method
+    /// as the wrapper for this [`con_subseq_mut()`](ConSubseq::con_subseq_mut()) method.
+    ///
+    /// ```
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(12, "hello", vec![1, 2, 3], "world", 24, 36);
+    /// let subseq = tup.con_subseq_mut::<tuple_t!(&'static str, i32), _>();
+    /// *get!(subseq; 0) = "rust";
+    /// *get!(subseq; 1) = 0;
+    /// assert_eq!(tup, tuple!(12, "hello", vec![1, 2, 3], "rust", 0, 36));
+    /// ```
+    fn con_subseq_mut(&mut self) -> Seq::AsMutOutput<'_>;
+
+    /// Swap elements with a contiguous subsequence.
+    ///
+    /// Unlike [`swap_subseq()`](Subseq::swap_subseq()), this method requires that all
+    /// elements of the subsequence are contiguous in the supersequence.
+    /// Sometimes it can do things that [`swap_subseq()`](Subseq::swap_subseq()) can't.
+    ///
+    /// **NOTE**: The contiguous subsequence must have one and only one candidate in the supersequence.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`swap_con_subseq()`](TupleLike::swap_con_subseq()) method
+    /// as the wrapper for this [`swap_con_subseq()`](ConSubseq::swap_con_subseq()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(1, Some("hello"), 2, Some(()), 3.14, 3);
+    /// let mut tup2 = tuple!(4, None::<()>);
+    /// tup.swap_con_subseq(&mut tup2);
+    /// assert_eq!(tup, tuple!(1, Some("hello"), 4, None::<()>, 3.14, 3));
+    /// assert_eq!(tup2, tuple!(2, Some(())));
+    /// ```
+    fn swap_con_subseq(&mut self, subseq: &mut Seq);
+
+    /// Replace elements with a contiguous subsequence.
+    ///
+    /// Unlike [`replace_subseq()`](Subseq::replace_subseq()), this method requires that
+    /// all elements of the subsequence are contiguous in the supersequence.
+    /// Sometimes it can do things that [`replace_subseq()`](Subseq::replace_subseq()) can't.
+    ///
+    /// **NOTE**: The contiguous subsequence must have one and only one candidate in the supersequence.
+    ///
+    /// It returns a contiguous subsequence consisting of the replaced elements.
+    ///
+    /// Hint: If you don't want to consume the input tuple,
+    /// then what you are looking for might be [`swap_con_subseq()`](TupleLike::swap_con_subseq()).
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`replace_con_subseq()`](TupleLike::replace_con_subseq()) method
+    /// as the wrapper for this [`replace_con_subseq()`](ConSubseq::replace_con_subseq()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let mut tup = tuple!(1, Some("hello"), 2, Some(()), 3.14, 3);
+    /// let replaced = tup.replace_con_subseq(tuple!(4, None::<()>));
+    /// assert_eq!(tup, tuple!(1, Some("hello"), 4, None::<()>, 3.14, 3));
+    /// assert_eq!(replaced, tuple!(2, Some(())));
+    /// ```
+    fn replace_con_subseq(&mut self, mut subseq: Seq) -> Seq {
+        ConSubseq::swap_con_subseq(self, &mut subseq);
+        subseq
+    }
+}
+
+impl<First, Other> ConSubseq<Unit, Complete> for Tuple<First, Other>
 where
     Other: TupleLike,
 {
-    fn swap_with(&mut self, _: &mut Unit) {}
+    fn con_subseq(self) -> Unit {
+        Unit
+    }
+
+    fn con_subseq_ref(&self) -> <Unit as TupleLike>::AsRefOutput<'_> {
+        Unit
+    }
+
+    fn con_subseq_mut(&mut self) -> <Unit as TupleLike>::AsMutOutput<'_> {
+        Unit
+    }
+
+    fn swap_con_subseq(&mut self, _: &mut Unit) {}
 }
 
-impl<First, Other1, Other2> ReplaceWith<Tuple<First, Other2>, Searched> for Tuple<First, Other1>
+impl<First, Other1, Other2> ConSubseq<Tuple<First, Other2>, Complete> for Tuple<First, Other1>
 where
-    Other1: ReplaceWith<Other2, Searched>,
+    Other1: ConSubseq<Other2, Complete>,
     Other2: TupleLike,
 {
-    fn swap_with(&mut self, rhs: &mut Tuple<First, Other2>) {
-        std::mem::swap(&mut self.0, &mut rhs.0);
-        ReplaceWith::swap_with(&mut self.1, &mut rhs.1);
+    fn con_subseq(self) -> Tuple<First, Other2> {
+        Tuple(self.0, ConSubseq::con_subseq(self.1))
+    }
+
+    fn con_subseq_ref(&self) -> <Tuple<First, Other2> as TupleLike>::AsRefOutput<'_> {
+        Tuple(&self.0, ConSubseq::con_subseq_ref(&self.1))
+    }
+
+    fn con_subseq_mut(&mut self) -> <Tuple<First, Other2> as TupleLike>::AsMutOutput<'_> {
+        Tuple(&mut self.0, ConSubseq::con_subseq_mut(&mut self.1))
+    }
+
+    fn swap_con_subseq(&mut self, subseq: &mut Tuple<First, Other2>) {
+        std::mem::swap(&mut self.0, &mut subseq.0);
+        ConSubseq::swap_con_subseq(&mut self.1, &mut subseq.1);
     }
 }
 
-impl<First, Other, T, Result> ReplaceWith<T, Searching<Result>> for Tuple<First, Other>
+impl<First, Other, T, I> ConSubseq<T, Unused<I>> for Tuple<First, Other>
 where
     T: TupleLike,
-    Other: ReplaceWith<T, Result>,
+    Other: ConSubseq<T, I>,
 {
-    fn swap_with(&mut self, rhs: &mut T) {
-        ReplaceWith::swap_with(&mut self.1, rhs)
+    fn con_subseq(self) -> T {
+        ConSubseq::con_subseq(self.1)
+    }
+
+    fn con_subseq_ref(&self) -> <T as TupleLike>::AsRefOutput<'_> {
+        ConSubseq::con_subseq_ref(&self.1)
+    }
+
+    fn con_subseq_mut(&mut self) -> <T as TupleLike>::AsMutOutput<'_> {
+        ConSubseq::con_subseq_mut(&mut self.1)
+    }
+
+    fn swap_con_subseq(&mut self, subseq: &mut T) {
+        ConSubseq::swap_con_subseq(&mut self.1, subseq)
     }
 }
