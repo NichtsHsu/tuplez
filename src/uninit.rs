@@ -154,7 +154,7 @@ pub trait Uninit: TupleLike {
 
     /// Set value to a specific [`MaybeUninit`] element in a tuple.
     ///
-    /// *NOTE**: The type of this element must exist only once in the tuple.
+    /// **NOTE**: The type of this element must exist only once in the tuple.
     ///
     /// Similar to [`MaybeUninit::write()`](MaybeUninit::write()),
     /// this overwrites any previous value without dropping it.

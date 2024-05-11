@@ -1627,7 +1627,7 @@ pub trait TupleLike {
 
     /// Set value to a specific [`MaybeUninit`](std::mem::MaybeUninit) element in a tuple.
     ///
-    /// *NOTE**: The type of this element must exist only once in the tuple.
+    /// **NOTE**: The type of this element must exist only once in the tuple.
     ///
     /// Similar to [`MaybeUninit::write()`](std::mem::MaybeUninit::write()),
     /// this overwrites any previous value without dropping it.
