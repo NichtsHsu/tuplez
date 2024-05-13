@@ -4,6 +4,7 @@
 #![cfg_attr(feature = "any_array", feature(maybe_uninit_array_assume_init))]
 #![cfg_attr(feature = "any_array", feature(maybe_uninit_uninit_array_transpose))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![deny(missing_docs)]
 
 //! Tuples represented in recursive form rather than parallel form.
 //!
@@ -46,18 +47,23 @@
 //!
 //! # Optional features
 //!
-//! * `any_array`: Use Rust's unstable feature to implement conversion from/to primitive arrays on tuples with any number of elements.
+//! * `any_array`: (*nightly*) Use Rust's unstable feature to implement conversion from/to primitive arrays on tuples with any number of elements.
 //! This feature requires compiling with rustc released to nightly channel.
 //! * `serde`: Derive `Serialize` and `Deserialize` for tuples.
-//! * `unwrap` (by default): Allows converting a tuple whose elements are all wrappers into a tuple of the values those wrappers contain.
-//! See [`unwrap()`](TupleLike::unwrap()).
+//! * `uninit`: Add APIs for tuples consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
+//! * `unwrap` (*by default*): Allows converting a tuple whose elements are all wrappers into a tuple of the values those wrappers contain.
+//!
+//! Bundles:
+//!
+//! * `default`: Enable default features, which are: `unwrap`.
+//! * `full`: Enable all features available on stable Rust, which are: `serde`, `uninit` and `unwrap`.
+//! * `full-nightly`: Enable all features (requires nightly Rust).
 //!
 //! # Examples
 //!
 //! ```
-//! // Enable Rust's `generic_const_exprs` feature if you enable tuplez's `any_array` feature.
-//! #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
-//!
+//! # #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
+//! #
 //! use tuplez::*;
 //!
 //! let tup = tuple!(1, "hello".to_string(), 3.14);
@@ -123,6 +129,9 @@ pub mod predicate;
 pub mod search;
 mod tuple;
 mod tupleize;
+
+#[cfg(feature = "uninit")]
+#[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
 pub mod uninit;
 
 #[cfg(feature = "any_array")]

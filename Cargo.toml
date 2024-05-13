@@ -26,11 +26,16 @@ categories = ["data-structures"]
 
 [features]
 default = ["unwrap"]
-full = [ "any_array", "serde", "unwrap" ]
+full = ["serde", "unwrap", "uninit"]
+full-nightly = ["full", "any_array"]
 any_array = []
 unwrap = []
+uninit = []
 
 [dependencies]
 paste = "1.0"
 serde = { version = "1.0", features = ["derive"], optional = true }
 tuplez-macros = { path = "tuplez-macros", version = "0.6.0" }
+
+[package.metadata.docs.rs]
+features = ["full"]

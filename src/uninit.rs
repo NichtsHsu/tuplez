@@ -5,6 +5,7 @@ use std::mem::MaybeUninit;
 
 /// Provide operations on tuples consisting of [`MaybeUninit`] elements.
 pub trait Uninit: TupleLike {
+    /// The type of the tuple consisting of values of each [`MaybeUninit`] elements.
     type Initialized: TupleLike;
 
     /// Extract the values from a tuple consisting of [`MaybeUninit`] elements.
