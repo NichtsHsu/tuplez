@@ -18,6 +18,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install nightly
       run: rustup default nightly
+    - name: Install miri
+      run: rustup component add miri
     - name: Build
       run: cargo build --verbose
     - name: Run tests
