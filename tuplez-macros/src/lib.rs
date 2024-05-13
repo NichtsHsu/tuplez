@@ -361,17 +361,17 @@ pub fn tupleize_derive(input: TokenStream) -> TokenStream {
                 Some(ident) => {
                     let field = quote!(. 1);
                     let fields = vec![field.clone(); index];
-                    let element = quote!( tuple #(#fields)* . 0);
+                    let element = quote!( value #(#fields)* . 0);
                     let from = quote!( #ident: #element, #from );
-                    let to = quote!( ::tuplez::Tuple( self. #ident, #to) );
+                    let to = quote!( ::tuplez::Tuple( value . #ident, #to) );
                     (ty, from, to)
                 }
                 None => {
                     let field = quote!(. 1);
                     let fields = vec![field.clone(); index];
-                    let from = quote!( tuple #(#fields)* . 0, #from );
+                    let from = quote!( value #(#fields)* . 0, #from );
                     let index = syn::Index::from(index);
-                    let to = quote!( ::tuplez::Tuple( self. #index, #to) );
+                    let to = quote!( ::tuplez::Tuple( value . #index, #to) );
                     (ty, from, to)
                 }
             }
@@ -384,14 +384,20 @@ pub fn tupleize_derive(input: TokenStream) -> TokenStream {
     };
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     quote!(
-        impl #impl_generics ::tuplez::Tupleize for #ident #ty_generics #where_clause {
-            type Equivalent = #tuple_ty;
-            fn tupleize(self) -> Self::Equivalent {
+        impl #impl_generics ::std::convert::From<#ident #ty_generics> for #tuple_ty #where_clause {
+            fn from(value: #ident #ty_generics) -> Self {
                 #to_tuple
             }
-            fn from_tuple(tuple: Self::Equivalent) -> Self {
+        }
+
+        impl #impl_generics ::std::convert::From<#tuple_ty> for #ident #ty_generics #where_clause {
+            fn from(value: #tuple_ty) -> Self {
                 #from_tuple
             }
+        }
+
+        impl #impl_generics ::tuplez::Tupleize for #ident #ty_generics #where_clause {
+            type Equivalent = #tuple_ty;
         }
     )
     .into()

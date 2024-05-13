@@ -25,16 +25,15 @@
 ///     age: 49,
 ///     meta: Some(88.88),
 /// };
-/// assert_eq!(smith, Person::from_tuple(tuple!("Smith", 49, Some(88.88))));
+/// assert_eq!(smith, Person::from(tuple!("Smith", 49, Some(88.88))));
 /// ```
-pub trait Tupleize {
+pub trait Tupleize: From<Self::Equivalent> + Into<Self::Equivalent> {
     /// The equivalent tuple type with the same number of elements, the same element types,
     /// and the same element order as the struct.
-    type Equivalent;
+    type Equivalent: From<Self>;
 
     /// Convert self into a tuple.
-    fn tupleize(self) -> Self::Equivalent;
-
-    /// Convert from a tuple.
-    fn from_tuple(tuple: Self::Equivalent) -> Self;
+    fn tupleize(self) -> Self::Equivalent {
+        <Self::Equivalent as From<Self>>::from(self)
+    }
 }
