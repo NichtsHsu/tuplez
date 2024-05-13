@@ -775,6 +775,29 @@ pub trait TupleLike {
         Search::replace(self, value)
     }
 
+    /// Replace a specific element with another value that may be of a different type.
+    ///
+    /// The new element is generated a the user-defined function.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, 3.14, "hello", Some([1, 2, 3]));
+    /// let result = tup.map_replace(|x: f64| x.to_string());
+    /// assert_eq!(result, tuple!(1, "3.14".to_string(), "hello", Some([1, 2, 3])))
+    /// ```
+    fn map_replace<T, U, F, I>(self, f: F) -> Self::MapReplaceOutput<U>
+    where
+        Self: Search<T, I> + Sized,
+        F: FnOnce(T) -> U,
+    {
+        Search::map_replace(self, f)
+    }
+
+    // fn map_replace<T, I>(self, value: T) ->
+
     /// Take out a subsequence.
     ///
     /// **NOTE**: The subsequence must have one and only one candidate in the supersequence.
@@ -914,6 +937,46 @@ pub trait TupleLike {
         Self: Subseq<Seq, I>,
     {
         Subseq::replace_subseq(self, subseq)
+    }
+
+    /// Replace elements of specific subsequence with another sequence
+    /// that may be of different element types.
+    ///
+    /// The elements of new sequence is generated from the user-defined mapper.
+    ///
+    /// Check out [`Mapper`](crate::foreach::Mapper)’s documentation page to learn how to build a mapper.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::fmt::Debug;
+    /// use tuplez::{mapper, tuple, TupleLike, tuple_t};
+    ///
+    /// let tup = tuple!(1, 3.14, "hello", [1, 2, 3]);
+    /// let result = tup.map_replace_subseq::<tuple_t!(f64, [i32; 3]), _, _>(mapper! {
+    ///     |x: f64| -> i32 { x as i32 }
+    ///     <T: Debug, const N: usize> |x: [T; N]| -> String { format!("{x:?}") }
+    /// });
+    /// assert_eq!(result, tuple!(1, 3, "hello", "[1, 2, 3]".to_string()))
+    /// ```
+    fn map_replace_subseq<Seq, F, I>(self, f: F) -> Self::MapReplaceOutput
+    where
+        Seq: TupleLike,
+        Self: SubseqMapReplace<Seq, F, I> + Sized,
+    {
+        SubseqMapReplace::map_replace_subseq(self, f)
+    }
+
+    /// Replace elements of specific subsequence with another sequence
+    /// that may be of different element types.
+    ///
+    /// Same as [`map_replace_subseq()`](TupleLike::map_replace_subseq()).
+    fn foreach_subseq<Seq, F, I>(self, f: F) -> Self::MapReplaceOutput
+    where
+        Seq: TupleLike,
+        Self: SubseqMapReplace<Seq, F, I> + Sized,
+    {
+        SubseqMapReplace::map_replace_subseq(self, f)
     }
 
     /// Take out a contiguous subsequence.
@@ -1056,6 +1119,45 @@ pub trait TupleLike {
         Self: ConSubseq<Seq, I>,
     {
         ConSubseq::replace_con_subseq(self, subseq)
+    }
+
+    /// Replace elements of specific contiguous subsequence with another sequence
+    /// that may be of different element types.
+    ///
+    /// The elements of new sequence is generated from the user-defined mapper.
+    ///
+    /// Check out [`Mapper`](crate::foreach::Mapper)’s documentation page to learn how to build a mapper.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{mapper, tuple, TupleLike, tuple_t};
+    ///
+    /// let tup = tuple!("1", "2", "3", true, false, true);
+    /// let result = tup.map_replace_con_subseq::<tuple_t!(&str, bool, bool), _, _>(mapper! {
+    ///     |x: &str| -> i32 { x.parse().unwrap() }
+    ///     |x: bool| -> bool { !x }
+    /// });
+    /// assert_eq!(result, tuple!("1", "2", 3, false, true, true));
+    /// ```
+    fn map_replace_con_subseq<Seq, F, I>(self, f: F) -> Self::MapReplaceOutput
+    where
+        Seq: TupleLike,
+        Self: ConSubseqMapReplace<Seq, F, I> + Sized,
+    {
+        ConSubseqMapReplace::map_replace_con_subseq(self, f)
+    }
+
+    /// Replace elements of specific contiguous subsequence with another sequence
+    /// that may be of different element types.
+    ///
+    /// Same as [`map_replace_con_subseq()`](TupleLike::map_replace_con_subseq()).
+    fn foreach_con_subseq<Seq, F, I>(self, f: F) -> Self::MapReplaceOutput
+    where
+        Seq: TupleLike,
+        Self: ConSubseqMapReplace<Seq, F, I> + Sized,
+    {
+        ConSubseqMapReplace::map_replace_con_subseq(self, f)
     }
 
     /// In the past it was used for the functionality of [`subseq()`](TupleLike::subseq()),
@@ -1510,7 +1612,7 @@ pub trait TupleLike {
     #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
     fn to_uninit(self) -> Self::Uninit;
 
-    /// Extract the values from a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
+    /// Extract the values of a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
     ///
     /// # Safety
     ///
@@ -1522,9 +1624,9 @@ pub trait TupleLike {
     /// use tuplez::{tuple, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, bool, &str)>::uninit();
-    /// uninit.uninit_write(12);
-    /// uninit.uninit_write(true);
-    /// uninit.uninit_write("hello");
+    /// uninit.uninit_write_one(12);
+    /// uninit.uninit_write_one(true);
+    /// uninit.uninit_write_one("hello");
     /// let tup = unsafe { uninit.uninit_assume_init() };
     /// assert_eq!(tup, tuple!(12, true, "hello"));
     /// ```
@@ -1537,7 +1639,32 @@ pub trait TupleLike {
         Uninit::assume_init(self)
     }
 
-    /// Read the values from a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
+    /// Extract value from a specific [`MaybeUninit`](std::mem::MaybeUninit) element.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init()`](std::mem::MaybeUninit::assume_init()).
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut uninit = <tuple_t!(i32, bool, &str)>::uninit();
+    /// uninit.uninit_write_one(12);
+    /// let first_init = unsafe { uninit.uninit_assume_init_one::<i32, _>() };
+    /// assert_eq!(get!(first_init; 0), 12);
+    /// let _: tuple_t!(i32, MaybeUninit<bool>, MaybeUninit<&str>) = first_init;
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_one<T, I>(self) -> Self::MapReplaceOutput<T>
+    where
+        Self: Search<MaybeUninit<T>, I> + Sized,
+    {
+        Search::map_replace(self, |x| x.assume_init())
+    }
+
+    /// Read the values of a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
     ///
     /// # Safety
     ///
@@ -1549,8 +1676,8 @@ pub trait TupleLike {
     /// use tuplez::{tuple, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, Option<Vec<u32>>)>::uninit();
-    /// uninit.uninit_write(12);
-    /// uninit.uninit_write(None);
+    /// uninit.uninit_write_one(12);
+    /// uninit.uninit_write_one(None);
     /// let tup1 = unsafe { uninit.uninit_assume_init_read() };
     /// // SAFETY: `i32` implements `Copy`, duplicating a `None` value is safe.
     /// let tup2 = unsafe { uninit.uninit_assume_init_read() };
@@ -1565,7 +1692,38 @@ pub trait TupleLike {
         Uninit::assume_init_read(self)
     }
 
-    /// Get immutable references to values from a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
+    /// Read one value from a specific [`MaybeUninit`] element.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_read()`](std::mem::MaybeUninit::assume_init_read()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(
+    ///     0,
+    ///     MaybeUninit::<i32>::new(12),
+    ///     "hello",
+    ///     MaybeUninit::<f64>::uninit(),
+    ///     24
+    /// );
+    /// let x: i32 = unsafe { tup.uninit_assume_init_read_one() };
+    /// assert_eq!(x, 12);
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_read_one<T, I>(&self) -> T
+    where
+        Self: Search<MaybeUninit<T>, I>,
+    {
+        Search::get_ref(self).assume_init_read()
+    }
+
+    /// Get immutable references to values of a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
     ///
     /// # Safety
     ///
@@ -1577,8 +1735,8 @@ pub trait TupleLike {
     /// use tuplez::{get, tuple, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, Vec<i32>)>::uninit();
-    /// uninit.uninit_write(12);
-    /// uninit.uninit_write(vec![1, 2, 3]);
+    /// uninit.uninit_write_one(12);
+    /// uninit.uninit_write_one(vec![1, 2, 3]);
     /// let tup_ref = unsafe { uninit.uninit_assume_init_ref() };
     /// assert_eq!(get!(tup_ref; 0), &12);
     /// assert_eq!(get!(tup_ref; 1), &vec![1, 2, 3]);
@@ -1593,7 +1751,34 @@ pub trait TupleLike {
         Uninit::assume_init_ref(self)
     }
 
-    /// Get mutable references to values from a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
+    /// Get immutable reference to value of a specific [`MaybeUninit`](std::mem::MaybeUninit) element.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_ref()`](std::mem::MaybeUninit::assume_init_ref()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(MaybeUninit::<Vec<i32>>::uninit(), "hello", 12);
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let v = unsafe { tup.uninit_assume_init_ref_one::<Vec<i32>, _>() };
+    /// assert_eq!(v, &vec![1, 2, 3]);
+    /// unsafe { tup.uninit_assume_init_drop_one::<Vec<i32>, _>(); }
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_ref_one<T, I>(&self) -> &T
+    where
+        Self: Search<MaybeUninit<T>, I>,
+    {
+        Search::get_ref(self).assume_init_ref()
+    }
+
+    /// Get mutable references to values of a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
     ///
     /// # Safety
     ///
@@ -1605,8 +1790,8 @@ pub trait TupleLike {
     /// use tuplez::{get, tuple, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, Vec<i32>)>::uninit();
-    /// uninit.uninit_write(12);
-    /// uninit.uninit_write(vec![1, 2, 3]);
+    /// uninit.uninit_write_one(12);
+    /// uninit.uninit_write_one(vec![1, 2, 3]);
     /// let tup_mut = unsafe { uninit.uninit_assume_init_mut() };
     /// *get!(tup_mut; 0) += 1;
     /// get!(tup_mut; 1).push(4);
@@ -1620,6 +1805,34 @@ pub trait TupleLike {
         Self: Uninit,
     {
         Uninit::assume_init_mut(self)
+    }
+
+    /// Get mutable reference to value of a specific [`MaybeUninit`](std::mem::MaybeUninit) element.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_mut()`](std::mem::MaybeUninit::assume_init_mut()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(MaybeUninit::<Vec<i32>>::uninit(), "hello", 12);
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let v = unsafe { tup.uninit_assume_init_mut_one::<Vec<i32>, _>() };
+    /// v.push(4);
+    /// assert_eq!(v, &vec![1, 2, 3, 4]);
+    /// unsafe { tup.uninit_assume_init_drop_one::<Vec<i32>, _>(); }
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_mut_one<T, I>(&mut self) -> &mut T
+    where
+        Self: Search<MaybeUninit<T>, I>,
+    {
+        Search::get_mut(self).assume_init_mut()
     }
 
     /// Drop values in place for a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
@@ -1636,7 +1849,21 @@ pub trait TupleLike {
         Uninit::assume_init_drop(self)
     }
 
-    /// Get points to values from a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
+    /// Drop value in place for a specific [`MaybeUninit`](std::mem::MaybeUninit) element.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_drop()`](std::mem::MaybeUninit::assume_init_drop()).
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_drop_one<T, I>(&mut self)
+    where
+        Self: Search<MaybeUninit<T>, I>,
+    {
+        Search::get_mut(self).assume_init_drop()
+    }
+
+    /// Get points to values of a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
     ///
     /// # Example
     ///
@@ -1644,8 +1871,8 @@ pub trait TupleLike {
     /// use tuplez::{get, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, Vec<i32>)>::uninit();
-    /// uninit.uninit_write(12);
-    /// uninit.uninit_write(vec![1, 2, 3]);
+    /// uninit.uninit_write_one(12);
+    /// uninit.uninit_write_one(vec![1, 2, 3]);
     /// let v = unsafe { &*get!(uninit.uninit_as_ptr(); 1) };
     /// assert_eq!(v.len(), 3);
     /// unsafe { uninit.uninit_assume_init_drop(); }
@@ -1659,7 +1886,7 @@ pub trait TupleLike {
         Uninit::as_ptr(self)
     }
 
-    /// Get mutable points to values from a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
+    /// Get mutable points to values of a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
     ///
     /// # Example
     ///
@@ -1667,8 +1894,8 @@ pub trait TupleLike {
     /// use tuplez::{get, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, Vec<i32>)>::uninit();
-    /// uninit.uninit_write(12);
-    /// uninit.uninit_write(vec![1, 2, 3]);
+    /// uninit.uninit_write_one(12);
+    /// uninit.uninit_write_one(vec![1, 2, 3]);
     /// let v = unsafe { &mut *get!(uninit.uninit_as_mut_ptr(); 1) };
     /// v.push(4);
     /// assert_eq!(v.len(), 4);
@@ -1693,22 +1920,33 @@ pub trait TupleLike {
     /// # Example
     ///
     /// ```
+    /// use std::mem::MaybeUninit;
     /// use tuplez::{tuple, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, bool, &str)>::uninit();
-    /// uninit.uninit_write(12);
-    /// uninit.uninit_write(true);
-    /// uninit.uninit_write("hello");
+    /// uninit.uninit_write_one(12);
+    /// uninit.uninit_write_one(true);
+    /// uninit.uninit_write_one("hello");
     /// let tup = unsafe { uninit.uninit_assume_init() };
     /// assert_eq!(tup, tuple!(12, true, "hello"));
+    ///
+    /// let mut tup = tuple!(
+    ///     0,
+    ///     MaybeUninit::<i32>::uninit(),
+    ///     "hello",
+    ///     MaybeUninit::<f64>::uninit(),
+    ///     24
+    /// );
+    /// let x = unsafe { tup.uninit_write_one(12) };
+    /// assert_eq!(x, &12);
     /// ```
     #[cfg(feature = "uninit")]
     #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
-    fn uninit_write<T, I>(&mut self, value: T) -> &mut T
+    fn uninit_write_one<T, I>(&mut self, value: T) -> &mut T
     where
-        Self: Uninit + Search<MaybeUninit<T>, I>,
+        Self: Search<MaybeUninit<T>, I>,
     {
-        Uninit::write(self, value)
+        Search::get_mut(self).write(value)
     }
 
     /// Set values to a tuple consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
@@ -1722,20 +1960,240 @@ pub trait TupleLike {
     /// use tuplez::{tuple, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, bool, &str)>::uninit();
-    /// uninit.uninit_write_all(tuple!(12, true, "hello"));
+    /// uninit.uninit_write(tuple!(12, true, "hello"));
     /// let tup = unsafe { uninit.uninit_assume_init() };
     /// assert_eq!(tup, tuple!(12, true, "hello"));
     /// ```
     #[cfg(feature = "uninit")]
     #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
-    fn uninit_write_all(
+    fn uninit_write(
         &mut self,
         init: Self::Initialized,
     ) -> <Self::Initialized as TupleLike>::AsMutOutput<'_>
     where
         Self: Uninit,
     {
-        Uninit::write_all(self, init)
+        Uninit::write(self, init)
+    }
+
+    /// Extract values of a specific subsequence consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init()`](MaybeUninit::assume_init()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<&str>::uninit(),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let part_init = unsafe {
+    ///     tup.uninit_assume_init_subseq::<tuple_t!(i32, Vec<i32>), _>()
+    /// };
+    /// assert_eq!(get!(part_init; 1), 0);
+    /// assert_eq!(get!(part_init; 3), vec![1, 2, 3]);
+    /// let _: tuple_t!(i32, i32, MaybeUninit<&str>, Vec<i32>, bool) = part_init;
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_subseq<Seq, I>(self) -> Self::PartiallyInitialized
+    where
+        Seq: TupleLike,
+        Self: UninitSubseq<Seq, I> + Sized,
+    {
+        UninitSubseq::assume_init_subseq(self)
+    }
+
+    /// Read the values of a specific subsequence consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_read()`](MaybeUninit::assume_init_read()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<&str>::uninit(),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited = unsafe {
+    ///     tup.uninit_assume_init_read_subseq::<tuple_t!(i32, Vec<i32>), _>()
+    /// };
+    /// assert_eq!(inited, tuple!(0, vec![1, 2, 3]));
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_read_subseq<Seq, I>(&self) -> Seq
+    where
+        Seq: TupleLike,
+        Self: UninitSubseq<Seq, I>,
+    {
+        UninitSubseq::assume_init_read_subseq(self)
+    }
+
+    /// Get immutable references to values of a specific subsequence
+    /// consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_ref()`](MaybeUninit::assume_init_ref()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<&str>::uninit(),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited_ref = unsafe {
+    ///     tup.uninit_assume_init_ref_subseq::<tuple_t!(i32, Vec<i32>), _>()
+    /// };
+    /// assert_eq!(inited_ref, tuple!(&0, &vec![1, 2, 3]));
+    /// unsafe { tup.uninit_assume_init_drop_subseq::<tuple_t!(i32, Vec<i32>), _>() };
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_ref_subseq<Seq, I>(&self) -> <Seq as TupleLike>::AsRefOutput<'_>
+    where
+        Seq: TupleLike,
+        Self: UninitSubseq<Seq, I>,
+    {
+        UninitSubseq::assume_init_ref_subseq(self)
+    }
+
+    /// Get mutable references to values of a specific subsequence
+    /// consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_mut()`](MaybeUninit::assume_init_mut()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<&str>::uninit(),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited_mut = unsafe {
+    ///     tup.uninit_assume_init_mut_subseq::<tuple_t!(i32, Vec<i32>), _>()
+    /// };
+    /// *get!(inited_mut; 0) += 1;
+    /// get!(inited_mut; 1).push(4);
+    /// assert_eq!(inited_mut, tuple!(&mut 1, &mut vec![1, 2, 3, 4]));
+    /// unsafe { tup.uninit_assume_init_drop_subseq::<tuple_t!(i32, Vec<i32>), _>() };
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_mut_subseq<Seq, I>(
+        &mut self,
+    ) -> <Seq as TupleLike>::AsMutOutput<'_>
+    where
+        Seq: TupleLike,
+        Self: UninitSubseq<Seq, I>,
+    {
+        UninitSubseq::assume_init_mut_subseq(self)
+    }
+
+    /// Get pointers to values of a specific subsequence
+    /// consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<&str>::uninit(),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited_ptr = tup.uninit_subseq_as_ptr::<tuple_t!(i32, Vec<i32>), _>();
+    /// unsafe {
+    ///     assert_eq!(*get!(inited_ptr; 0), 0);
+    ///     assert_eq!(*get!(inited_ptr; 1), vec![1, 2, 3]);
+    ///     tup.uninit_assume_init_drop_subseq::<tuple_t!(i32, Vec<i32>), _>();
+    /// }
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    fn uninit_subseq_as_ptr<Seq, I>(&self) -> <Seq as TupleLike>::AsPtrOutput
+    where
+        Seq: TupleLike,
+        Self: UninitSubseq<Seq, I>,
+    {
+        UninitSubseq::subseq_as_ptr(self)
+    }
+
+    /// Get mutable pointers to values of a specific subsequence
+    /// consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<&str>::uninit(),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited_ptr = tup.uninit_subseq_as_mut_ptr::<tuple_t!(i32, Vec<i32>), _>();
+    /// unsafe {
+    ///     *get!(inited_ptr; 0) += 1;
+    ///     (*get!(inited_ptr; 1)).push(4);
+    ///     assert_eq!(*get!(inited_ptr; 0), 1);
+    ///     assert_eq!(*get!(inited_ptr; 1), vec![1, 2, 3, 4]);
+    ///     tup.uninit_assume_init_drop_subseq::<tuple_t!(i32, Vec<i32>), _>();
+    /// }
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    fn uninit_subseq_as_mut_ptr<Seq, I>(&mut self) -> <Seq as TupleLike>::AsMutPtrOutput
+    where
+        Seq: TupleLike,
+        Self: UninitSubseq<Seq, I>,
+    {
+        UninitSubseq::subseq_as_mut_ptr(self)
     }
 
     /// Set values to a subsequence consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
@@ -1751,7 +2209,7 @@ pub trait TupleLike {
     /// use tuplez::{tuple, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, bool, &str)>::uninit();
-    /// uninit.uninit_write(true);
+    /// uninit.uninit_write_one(true);
     /// uninit.uninit_write_subseq(tuple!(12, "hello"));
     /// let tup = unsafe { uninit.uninit_assume_init() };
     /// assert_eq!(tup, tuple!(12, true, "hello"));
@@ -1783,6 +2241,227 @@ pub trait TupleLike {
         UninitSubseq::assume_init_drop_subseq(self)
     }
 
+    /// Extract values of a specific contiguous subsequence consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init()`](MaybeUninit::assume_init()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<i32>::new(13),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let part_init = unsafe {
+    ///     tup.uninit_assume_init_con_subseq::<tuple_t!(i32, Vec<i32>), _>()
+    /// };
+    /// assert_eq!(get!(part_init; 2), 13);
+    /// assert_eq!(get!(part_init; 3), vec![1, 2, 3]);
+    /// let _: tuple_t!(i32, MaybeUninit<i32>, i32, Vec<i32>, bool) = part_init;
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_con_subseq<Seq, I>(self) -> Self::PartiallyInitialized
+    where
+        Seq: TupleLike,
+        Self: UninitConSubseq<Seq, I> + Sized,
+    {
+        UninitConSubseq::assume_init_con_subseq(self)
+    }
+
+    /// Read the values of a specific contiguous subsequence consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_read()`](MaybeUninit::assume_init_read()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<i32>::new(13),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited = unsafe {
+    ///     tup.uninit_assume_init_read_con_subseq::<tuple_t!(i32, Vec<i32>), _>()
+    /// };
+    /// assert_eq!(inited, tuple!(13, vec![1, 2, 3]));
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_read_con_subseq<Seq, I>(&self) -> Seq
+    where
+        Seq: TupleLike,
+        Self: UninitConSubseq<Seq, I>,
+    {
+        UninitConSubseq::assume_init_read_con_subseq(self)
+    }
+
+    /// Get immutable references to values of a specific contiguous subsequence
+    /// consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_ref()`](MaybeUninit::assume_init_ref()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<i32>::new(13),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited_ref = unsafe {
+    ///     tup.uninit_assume_init_ref_con_subseq::<tuple_t!(i32, Vec<i32>), _>()
+    /// };
+    /// assert_eq!(inited_ref, tuple!(&13, &vec![1, 2, 3]));
+    /// unsafe { tup.uninit_assume_init_drop_con_subseq::<tuple_t!(i32, Vec<i32>), _>() };
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_ref_con_subseq<Seq, I>(
+        &self,
+    ) -> <Seq as TupleLike>::AsRefOutput<'_>
+    where
+        Seq: TupleLike,
+        Self: UninitConSubseq<Seq, I>,
+    {
+        UninitConSubseq::assume_init_ref_con_subseq(self)
+    }
+
+    /// Get mutable references to values of a specific contiguous subsequence
+    /// consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Safety
+    ///
+    /// Same as [`MaybeUninit::assume_init_mut()`](MaybeUninit::assume_init_mut()).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<i32>::new(13),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited_mut = unsafe {
+    ///     tup.uninit_assume_init_mut_con_subseq::<tuple_t!(i32, Vec<i32>), _>()
+    /// };
+    /// *get!(inited_mut; 0) += 1;
+    /// get!(inited_mut; 1).push(4);
+    /// assert_eq!(inited_mut, tuple!(&mut 14, &mut vec![1, 2, 3, 4]));
+    /// unsafe { tup.uninit_assume_init_drop_con_subseq::<tuple_t!(i32, Vec<i32>), _>() };
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    unsafe fn uninit_assume_init_mut_con_subseq<Seq, I>(
+        &mut self,
+    ) -> <Seq as TupleLike>::AsMutOutput<'_>
+    where
+        Seq: TupleLike,
+        Self: UninitConSubseq<Seq, I>,
+    {
+        UninitConSubseq::assume_init_mut_con_subseq(self)
+    }
+    /// Get pointers to values of a specific contiguous subsequence
+    /// consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<i32>::new(13),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited_ptr = tup.uninit_con_subseq_as_ptr::<tuple_t!(i32, Vec<i32>), _>();
+    /// unsafe {
+    ///     assert_eq!(*get!(inited_ptr; 0), 13);
+    ///     assert_eq!(*get!(inited_ptr; 1), vec![1, 2, 3]);
+    ///     tup.uninit_assume_init_drop_con_subseq::<tuple_t!(i32, Vec<i32>), _>();
+    /// }
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    fn uninit_con_subseq_as_ptr<Seq, I>(&self) -> <Seq as TupleLike>::AsPtrOutput
+    where
+        Seq: TupleLike,
+        Self: UninitConSubseq<Seq, I>,
+    {
+        UninitConSubseq::con_subseq_as_ptr(self)
+    }
+
+    /// Get mutable pointers to values of a specific contiguous subsequence
+    /// consisting of [`MaybeUninit`] elements.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    /// use tuplez::{get, tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(
+    ///     12,
+    ///     MaybeUninit::<i32>::zeroed(),
+    ///     MaybeUninit::<i32>::new(13),
+    ///     MaybeUninit::<Vec<i32>>::uninit(),
+    ///     false,
+    /// );
+    /// tup.uninit_write_one(vec![1, 2, 3]);
+    /// let inited_ptr = tup.uninit_con_subseq_as_mut_ptr::<tuple_t!(i32, Vec<i32>), _>();
+    /// unsafe {
+    ///     *get!(inited_ptr; 0) += 1;
+    ///     (*get!(inited_ptr; 1)).push(4);
+    ///     assert_eq!(*get!(inited_ptr; 0), 14);
+    ///     assert_eq!(*get!(inited_ptr; 1), vec![1, 2, 3, 4]);
+    ///     tup.uninit_assume_init_drop_con_subseq::<tuple_t!(i32, Vec<i32>), _>();
+    /// }
+    /// ```
+    #[cfg(feature = "uninit")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "uninit")))]
+    fn uninit_con_subseq_as_mut_ptr<Seq, I>(&mut self) -> <Seq as TupleLike>::AsMutPtrOutput
+    where
+        Seq: TupleLike,
+        Self: UninitConSubseq<Seq, I>,
+    {
+        UninitConSubseq::con_subseq_as_mut_ptr(self)
+    }
+
     /// Set values to a contiguous subsequence consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
     ///
     /// Similar to [`MaybeUninit::write()`](std::mem::MaybeUninit::write()),
@@ -1796,7 +2475,7 @@ pub trait TupleLike {
     /// use tuplez::{tuple, TupleLike, tuple_t};
     ///
     /// let mut uninit = <tuple_t!(i32, bool, &str)>::uninit();
-    /// uninit.uninit_write(true);
+    /// uninit.uninit_write_one(true);
     /// uninit.uninit_write_subseq(tuple!(12, "hello"));
     /// let tup = unsafe { uninit.uninit_assume_init() };
     /// assert_eq!(tup, tuple!(12, true, "hello"));

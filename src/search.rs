@@ -2,7 +2,7 @@
 //!
 //! Check the documentation page of [`Search`] for details.
 
-use crate::{Tuple, TupleLenEqTo, TupleLike, Unit};
+use crate::{foreach::Mapper, Tuple, TupleLenEqTo, TupleLike, Unit};
 use std::marker::PhantomData;
 
 /// Helper type indicates that the search has been completed.
@@ -20,6 +20,9 @@ pub struct Used<T>(PhantomData<T>);
 pub trait Search<T, I>: TupleLike {
     /// The type of the remainder of the tuple after taking out the searched element.
     type TakeRemainder: TupleLike;
+
+    /// The type of tuple that replace one element to another value that may be of a different type.
+    type MapReplaceOutput<U>: TupleLike;
 
     /// Take out the searched element, and get the remainder of tuple.
     ///
@@ -150,6 +153,26 @@ pub trait Search<T, I>: TupleLike {
         Search::swap(self, &mut value);
         value
     }
+
+    /// Replace a specific element with another value that may be of a different type.
+    ///
+    /// The new element is generated a the user-defined function.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`map_replace()`](TupleLike::map_replace()) method as the wrapper
+    /// for this [`map_replace()`](Search::map_replace()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(1, 3.14, "hello", Some([1, 2, 3]));
+    /// let result = tup.map_replace(|x: f64| x.to_string());
+    /// assert_eq!(result, tuple!(1, "3.14".to_string(), "hello", Some([1, 2, 3])))
+    /// ```
+    fn map_replace<U, F>(self, f: F) -> Self::MapReplaceOutput<U>
+    where
+        F: FnOnce(T) -> U;
 }
 
 impl<First, Other> Search<First, Complete> for Tuple<First, Other>
@@ -157,6 +180,8 @@ where
     Other: TupleLike,
 {
     type TakeRemainder = Other;
+
+    type MapReplaceOutput<U> = Tuple<U, Other>;
 
     fn take(self) -> (First, Self::TakeRemainder) {
         (self.0, self.1)
@@ -169,6 +194,13 @@ where
     fn get_mut(&mut self) -> &mut First {
         &mut self.0
     }
+
+    fn map_replace<U, F>(self, f: F) -> Self::MapReplaceOutput<U>
+    where
+        F: FnOnce(First) -> U,
+    {
+        Tuple(f(self.0), self.1)
+    }
 }
 
 impl<First, Other, T, I> Search<T, Unused<I>> for Tuple<First, Other>
@@ -176,6 +208,8 @@ where
     Other: Search<T, I>,
 {
     type TakeRemainder = Tuple<First, Other::TakeRemainder>;
+
+    type MapReplaceOutput<U> = Tuple<First, Other::MapReplaceOutput<U>>;
 
     fn take(self) -> (T, Self::TakeRemainder) {
         let (value, remainder) = Search::take(self.1);
@@ -188,6 +222,13 @@ where
 
     fn get_mut(&mut self) -> &mut T {
         Search::get_mut(&mut self.1)
+    }
+
+    fn map_replace<U, F>(self, f: F) -> Self::MapReplaceOutput<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        Tuple(self.0, Search::map_replace(self.1, f))
     }
 }
 
@@ -440,6 +481,77 @@ where
     }
 }
 
+/// Replace elements of a specific subsequence to another sequence
+/// that may be of different element types.
+pub trait SubseqMapReplace<Seq, F, I>: Subseq<Seq, I>
+where
+    Seq: TupleLike,
+{
+    /// The type of tuple that replace elements of a specific subsequence
+    /// to another sequence that may be of different element types.
+    type MapReplaceOutput: TupleLike;
+
+    /// Replace elements of specific subsequence with another sequence
+    /// that may be of different element types.
+    ///
+    /// The elements of new sequence is generated from the user-defined mapper.
+    ///
+    /// Check out [`Mapper`]’s documentation page to learn how to build a mapper.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`map_replace_subseq()`](TupleLike::map_replace_subseq())
+    /// method as the wrapper for this [`map_replace_subseq()`](SubseqMapReplace::map_replace_subseq()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::fmt::Debug;
+    /// use tuplez::{mapper, tuple, TupleLike, tuple_t};
+    ///
+    /// let tup = tuple!(1, 3.14, "hello", [1, 2, 3]);
+    /// let result = tup.map_replace_subseq::<tuple_t!(f64, [i32; 3]), _, _>(mapper! {
+    ///     |x: f64| -> i32 { x as i32 }
+    ///     <T: Debug, const N: usize> |x: [T; N]| -> String { format!("{x:?}") }
+    /// });
+    /// assert_eq!(result, tuple!(1, 3, "hello", "[1, 2, 3]".to_string()))
+    /// ```
+    fn map_replace_subseq(self, f: F) -> Self::MapReplaceOutput;
+}
+
+impl<F> SubseqMapReplace<Unit, F, Complete> for Unit {
+    type MapReplaceOutput = Unit;
+
+    fn map_replace_subseq(self, _: F) -> Self::MapReplaceOutput {
+        Unit
+    }
+}
+
+impl<First, Other1, Other2, F, I> SubseqMapReplace<Tuple<First, Other2>, F, Used<I>>
+    for Tuple<First, Other1>
+where
+    Other1: TupleLike + SubseqMapReplace<Other2, <F as Mapper<First>>::NextMapper, I>,
+    Other2: TupleLike,
+    F: Mapper<First>,
+{
+    type MapReplaceOutput = Tuple<F::Output, Other1::MapReplaceOutput>;
+
+    fn map_replace_subseq(self, f: F) -> Self::MapReplaceOutput {
+        let (output, next) = f.map(self.0);
+        Tuple(output, SubseqMapReplace::map_replace_subseq(self.1, next))
+    }
+}
+
+impl<First, Other, T, F, I> SubseqMapReplace<T, F, Unused<I>> for Tuple<First, Other>
+where
+    T: TupleLike,
+    Other: TupleLike + SubseqMapReplace<T, F, I>,
+{
+    type MapReplaceOutput = Tuple<First, Other::MapReplaceOutput>;
+
+    fn map_replace_subseq(self, f: F) -> Self::MapReplaceOutput {
+        Tuple(self.0, SubseqMapReplace::map_replace_subseq(self.1, f))
+    }
+}
+
 /// Search for contiguous subsequences of tuples.
 ///
 /// Unlike [`Subseq`], this trait requires that all elements of the subsequence are
@@ -665,6 +777,93 @@ where
     fn swap_con_subseq(&mut self, subseq: &mut Tuple<First1, Tuple<First2, Other2>>) {
         std::mem::swap(&mut self.0, &mut subseq.0);
         ConSubseq::swap_con_subseq(&mut self.1, &mut subseq.1);
+    }
+}
+
+/// Replace elements of a specific contiguous subsequence to another sequence
+/// that may be of different element types.
+pub trait ConSubseqMapReplace<Seq, F, I>: ConSubseq<Seq, I>
+where
+    Seq: TupleLike,
+{
+    /// The type of tuple that replace elements of a specific contiguous subsequence
+    /// to another sequence that may be of different element types.
+    type MapReplaceOutput: TupleLike;
+
+    /// Replace elements of specific contiguous subsequence with another sequence
+    /// that may be of different element types.
+    ///
+    /// The elements of new sequence is generated from the user-defined mapper.
+    ///
+    /// Check out [`Mapper`]’s documentation page to learn how to build a mapper.
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`map_replace_con_subseq()`](TupleLike::map_replace_con_subseq())
+    /// method as the wrapper for this [`map_replace_con_subseq()`](ConSubseqMapReplace::map_replace_con_subseq()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{mapper, tuple, TupleLike, tuple_t};
+    ///
+    /// let tup = tuple!("1", "2", "3", true, false, true);
+    /// let result = tup.map_replace_con_subseq::<tuple_t!(&str, bool, bool), _, _>(mapper! {
+    ///     |x: &str| -> i32 { x.parse().unwrap() }
+    ///     |x: bool| -> bool { !x }
+    /// });
+    /// assert_eq!(result, tuple!("1", "2", 3, false, true, true));
+    /// ```
+    fn map_replace_con_subseq(self, f: F) -> Self::MapReplaceOutput;
+}
+
+impl<F> ConSubseqMapReplace<Unit, F, Complete> for Unit {
+    type MapReplaceOutput = Unit;
+
+    fn map_replace_con_subseq(self, _: F) -> Self::MapReplaceOutput {
+        Unit
+    }
+}
+
+impl<First, Other, T, F, I> ConSubseqMapReplace<T, F, Unused<I>> for Tuple<First, Other>
+where
+    T: TupleLike,
+    Other: ConSubseqMapReplace<T, F, I>,
+{
+    type MapReplaceOutput = Tuple<First, Other::MapReplaceOutput>;
+    fn map_replace_con_subseq(self, f: F) -> Self::MapReplaceOutput {
+        Tuple(
+            self.0,
+            ConSubseqMapReplace::map_replace_con_subseq(self.1, f),
+        )
+    }
+}
+
+impl<First, Other, F, I> ConSubseqMapReplace<Tuple<First, Unit>, F, Used<I>> for Tuple<First, Other>
+where
+    Other: ConSubseqMapReplace<Unit, <F as Mapper<First>>::NextMapper, I>,
+    F: Mapper<First>,
+{
+    type MapReplaceOutput = Tuple<F::Output, Other>;
+
+    fn map_replace_con_subseq(self, f: F) -> Self::MapReplaceOutput {
+        Tuple(f.map(self.0).0, self.1)
+    }
+}
+
+impl<First1, First2, Other1, Other2, F, I>
+    ConSubseqMapReplace<Tuple<First1, Tuple<First2, Other2>>, F, Used<I>> for Tuple<First1, Other1>
+where
+    Other1: ConSubseqMapReplace<Tuple<First2, Other2>, <F as Mapper<First1>>::NextMapper, Used<I>>,
+    Other2: TupleLike,
+    F: Mapper<First1>,
+{
+    type MapReplaceOutput = Tuple<F::Output, Other1::MapReplaceOutput>;
+
+    fn map_replace_con_subseq(self, f: F) -> Self::MapReplaceOutput {
+        let (output, next) = f.map(self.0);
+        Tuple(
+            output,
+            ConSubseqMapReplace::map_replace_con_subseq(self.1, next),
+        )
     }
 }
 
