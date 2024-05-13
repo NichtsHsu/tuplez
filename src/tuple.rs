@@ -875,12 +875,12 @@ pub trait TupleLike {
     /// assert_eq!(tup, tuple!(1, Some("world"), 2, Some(()), 9.8, 3));
     /// assert_eq!(tup2, tuple!(Some("hello"), 3.14));
     /// ```
-    fn swap_subseq<Seq, I>(&mut self, rhs: &mut Seq)
+    fn swap_subseq<Seq, I>(&mut self, subseq: &mut Seq)
     where
         Seq: TupleLike,
         Self: Subseq<Seq, I>,
     {
-        Subseq::swap_subseq(self, rhs)
+        Subseq::swap_subseq(self, subseq)
     }
 
     /// Replace elements with a subsequence.
@@ -904,12 +904,12 @@ pub trait TupleLike {
     /// assert_eq!(tup, tuple!(1, Some("world"), 2, Some(()), 9.8, 3));
     /// assert_eq!(replaced, tuple!(Some("hello"), 3.14));
     /// ```
-    fn replace_subseq<Seq, I>(&mut self, rhs: Seq) -> Seq
+    fn replace_subseq<Seq, I>(&mut self, subseq: Seq) -> Seq
     where
         Seq: TupleLike,
         Self: Subseq<Seq, I>,
     {
-        Subseq::replace_subseq(self, rhs)
+        Subseq::replace_subseq(self, subseq)
     }
 
     /// Take out a contiguous subsequence.
