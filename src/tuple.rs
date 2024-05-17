@@ -2,9 +2,7 @@
 use crate::uninit::*;
 #[cfg(feature = "unwrap")]
 use crate::unwrap::*;
-use crate::{
-    fold::Foldable, foreach::Foreach, macros::__tuple_traits_impl, ops::*, predicate::*, search::*,
-};
+use crate::{fold::Foldable, foreach::Foreach, macros::*, ops::*, predicate::*, search::*};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "uninit")]
@@ -3351,7 +3349,7 @@ pub trait ToPrimitive {
 /// ```
 ///
 /// Always remember: unstable features are not guaranteed by Rust and may not be available someday in the future.
-/// 
+///
 /// Why `<T>` instead of `type Item`? Well, this is because the [`Unit`]s can be converted to any `[T; 0]`.
 pub trait ToArray<T>: TupleLike {
     /// The primitive array type to generate.
@@ -3457,366 +3455,35 @@ __tuple_traits_impl! { 30; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15
 __tuple_traits_impl! { 31; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 T28 T29 T30 }
 __tuple_traits_impl! { 32; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 T28 T29 T30 T31 }
 
-impl<T> Add<T> for Unit {
-    type Output = T;
-    fn add(self, rhs: T) -> Self::Output {
-        rhs
-    }
+__tuple_unary_ops_impl! {
+    Neg::neg(),
+    Not::not(),
 }
 
-impl<First1, Other1, First2, Other2> Add<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: Add<First2>,
-    Other1: Add<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn add(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 + rhs.0, self.1 + rhs.1)
-    }
+__tuple_binary_ops_impl! {
+    Add::add(),
+    Sub::sub(),
+    Mul::mul(),
+    Div::div(),
+    Rem::rem(),
+    BitAnd::bitand(),
+    BitOr::bitor(),
+    BitXor::bitxor(),
+    Shl::shl(),
+    Shr::shr(),
 }
 
-impl AddAssign for Unit {
-    fn add_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> AddAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: AddAssign<First2>,
-    Other1: AddAssign<Other2>,
-{
-    fn add_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 += rhs.0;
-        self.1 += rhs.1;
-    }
-}
-
-impl Sub for Unit {
-    type Output = Unit;
-    fn sub(self, _: Unit) -> Self::Output {
-        Unit
-    }
-}
-
-impl<First1, Other1, First2, Other2> Sub<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: Sub<First2>,
-    Other1: Sub<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn sub(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 - rhs.0, self.1 - rhs.1)
-    }
-}
-
-impl SubAssign for Unit {
-    fn sub_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> SubAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: SubAssign<First2>,
-    Other1: SubAssign<Other2>,
-{
-    fn sub_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 -= rhs.0;
-        self.1 -= rhs.1;
-    }
-}
-
-impl<T> Mul<T> for Unit {
-    type Output = T;
-    fn mul(self, rhs: T) -> T {
-        rhs
-    }
-}
-
-impl<First1, Other1, First2, Other2> Mul<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: Mul<First2>,
-    Other1: Mul<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn mul(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 * rhs.0, self.1 * rhs.1)
-    }
-}
-
-impl MulAssign for Unit {
-    fn mul_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> MulAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: MulAssign<First2>,
-    Other1: MulAssign<Other2>,
-{
-    fn mul_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 *= rhs.0;
-        self.1 *= rhs.1;
-    }
-}
-
-impl Div for Unit {
-    type Output = Unit;
-    fn div(self, _: Unit) -> Self::Output {
-        Unit
-    }
-}
-
-impl<First1, Other1, First2, Other2> Div<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: Div<First2>,
-    Other1: Div<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn div(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 / rhs.0, self.1 / rhs.1)
-    }
-}
-
-impl DivAssign for Unit {
-    fn div_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> DivAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: DivAssign<First2>,
-    Other1: DivAssign<Other2>,
-{
-    fn div_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 /= rhs.0;
-        self.1 /= rhs.1;
-    }
-}
-
-impl Rem for Unit {
-    type Output = Unit;
-    fn rem(self, _: Unit) -> Self::Output {
-        Unit
-    }
-}
-
-impl<First1, Other1, First2, Other2> Rem<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: Rem<First2>,
-    Other1: Rem<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn rem(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 % rhs.0, self.1 % rhs.1)
-    }
-}
-
-impl RemAssign for Unit {
-    fn rem_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> RemAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: RemAssign<First2>,
-    Other1: RemAssign<Other2>,
-{
-    fn rem_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 %= rhs.0;
-        self.1 %= rhs.1;
-    }
-}
-
-impl<T> BitAnd<T> for Unit {
-    type Output = T;
-    fn bitand(self, rhs: T) -> Self::Output {
-        rhs
-    }
-}
-
-impl<First1, Other1, First2, Other2> BitAnd<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: BitAnd<First2>,
-    Other1: BitAnd<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn bitand(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 & rhs.0, self.1 & rhs.1)
-    }
-}
-
-impl BitAndAssign for Unit {
-    fn bitand_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> BitAndAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: BitAndAssign<First2>,
-    Other1: BitAndAssign<Other2>,
-{
-    fn bitand_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 &= rhs.0;
-        self.1 &= rhs.1;
-    }
-}
-
-impl<T> BitOr<T> for Unit {
-    type Output = T;
-    fn bitor(self, rhs: T) -> Self::Output {
-        rhs
-    }
-}
-
-impl<First1, Other1, First2, Other2> BitOr<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: BitOr<First2>,
-    Other1: BitOr<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn bitor(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 | rhs.0, self.1 | rhs.1)
-    }
-}
-
-impl BitOrAssign for Unit {
-    fn bitor_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> BitOrAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: BitOrAssign<First2>,
-    Other1: BitOrAssign<Other2>,
-{
-    fn bitor_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 |= rhs.0;
-        self.1 |= rhs.1;
-    }
-}
-
-impl<T> BitXor<T> for Unit {
-    type Output = T;
-    fn bitxor(self, rhs: T) -> Self::Output {
-        rhs
-    }
-}
-
-impl<First1, Other1, First2, Other2> BitXor<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: BitXor<First2>,
-    Other1: BitXor<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn bitxor(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 ^ rhs.0, self.1 ^ rhs.1)
-    }
-}
-
-impl BitXorAssign for Unit {
-    fn bitxor_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> BitXorAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: BitXorAssign<First2>,
-    Other1: BitXorAssign<Other2>,
-{
-    fn bitxor_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 ^= rhs.0;
-        self.1 ^= rhs.1;
-    }
-}
-
-impl Shl for Unit {
-    type Output = Unit;
-    fn shl(self, _: Unit) -> Self::Output {
-        Unit
-    }
-}
-
-impl<First1, Other1, First2, Other2> Shl<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: Shl<First2>,
-    Other1: Shl<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn shl(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 << rhs.0, self.1 << rhs.1)
-    }
-}
-
-impl ShlAssign for Unit {
-    fn shl_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> ShlAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: ShlAssign<First2>,
-    Other1: ShlAssign<Other2>,
-{
-    fn shl_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 <<= rhs.0;
-        self.1 <<= rhs.1;
-    }
-}
-
-impl Shr for Unit {
-    type Output = Unit;
-    fn shr(self, _: Unit) -> Self::Output {
-        Unit
-    }
-}
-
-impl<First1, Other1, First2, Other2> Shr<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: Shr<First2>,
-    Other1: Shr<Other2>,
-{
-    type Output = Tuple<First1::Output, Other1::Output>;
-    fn shr(self, rhs: Tuple<First2, Other2>) -> Self::Output {
-        Tuple(self.0 >> rhs.0, self.1 >> rhs.1)
-    }
-}
-
-impl ShrAssign for Unit {
-    fn shr_assign(&mut self, _: Unit) {}
-}
-
-impl<First1, Other1, First2, Other2> ShrAssign<Tuple<First2, Other2>> for Tuple<First1, Other1>
-where
-    First1: ShrAssign<First2>,
-    Other1: ShrAssign<Other2>,
-{
-    fn shr_assign(&mut self, rhs: Tuple<First2, Other2>) {
-        self.0 >>= rhs.0;
-        self.1 >>= rhs.1;
-    }
-}
-
-impl Neg for Unit {
-    type Output = Unit;
-
-    fn neg(self) -> Self::Output {
-        self
-    }
-}
-
-impl<First: Neg, Other: Neg> Neg for Tuple<First, Other> {
-    type Output = Tuple<First::Output, Other::Output>;
-
-    fn neg(self) -> Self::Output {
-        Tuple(-self.0, -self.1)
-    }
-}
-
-impl Not for Unit {
-    type Output = Unit;
-
-    fn not(self) -> Self::Output {
-        self
-    }
-}
-
-impl<First: Not, Other: Not> Not for Tuple<First, Other> {
-    type Output = Tuple<First::Output, Other::Output>;
-
-    fn not(self) -> Self::Output {
-        Tuple(!self.0, !self.1)
-    }
+__tuple_assignment_ops_impl! {
+    AddAssign::add_assign(),
+    SubAssign::sub_assign(),
+    MulAssign::mul_assign(),
+    DivAssign::div_assign(),
+    RemAssign::rem_assign(),
+    BitAndAssign::bitand_assign(),
+    BitOrAssign::bitor_assign(),
+    BitXorAssign::bitxor_assign(),
+    ShlAssign::shl_assign(),
+    ShrAssign::shr_assign(),
 }
 
 impl<T, Other> IntoIterator for Tuple<T, Other>
