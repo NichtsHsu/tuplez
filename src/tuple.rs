@@ -3351,6 +3351,8 @@ pub trait ToPrimitive {
 /// ```
 ///
 /// Always remember: unstable features are not guaranteed by Rust and may not be available someday in the future.
+/// 
+/// Why `<T>` instead of `type Item`? Well, this is because the [`Unit`]s can be converted to any `[T; 0]`.
 pub trait ToArray<T>: TupleLike {
     /// The primitive array type to generate.
     type Array: IntoIterator<Item = T>;
