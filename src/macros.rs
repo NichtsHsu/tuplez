@@ -148,7 +148,7 @@ macro_rules! __tuple_unary_ops_impl {
         impl<First, Other> $tr for Tuple<First, Other>
         where
             First: $tr,
-            Other: $tr,
+            Other: $tr + TupleLike,
         {
             type Output = Tuple<First::Output, Other::Output>;
 
@@ -161,6 +161,7 @@ macro_rules! __tuple_unary_ops_impl {
         where
             &'a First: $tr,
             &'a Other: $tr,
+            Other: TupleLike,
         {
             type Output = Tuple<<&'a First as $tr>::Output, <&'a Other as $tr>::Output>;
 
@@ -193,7 +194,8 @@ macro_rules! __tuple_binary_ops_impl {
         impl<First1, Other1, First2, Other2> $tr<Tuple<First2, Other2>> for Tuple<First1, Other1>
         where
             First1: $tr<First2>,
-            Other1: $tr<Other2>,
+            Other1: $tr<Other2> + TupleLike,
+            Other2: TupleLike,
         {
             type Output = Tuple<First1::Output, Other1::Output>;
             fn $f(self, rhs: Tuple<First2, Other2>) -> Self::Output {
@@ -204,7 +206,8 @@ macro_rules! __tuple_binary_ops_impl {
         impl<'a, First1, Other1, First2, Other2> $tr<&'a Tuple<First2, Other2>> for Tuple<First1, Other1>
         where
             First1: $tr<&'a First2>,
-            Other1: $tr<&'a Other2>,
+            Other1: $tr<&'a Other2> + TupleLike,
+            Other2: TupleLike,
         {
             type Output = Tuple<First1::Output, Other1::Output>;
             fn $f(self, rhs: &'a Tuple<First2, Other2>) -> Self::Output {
@@ -216,6 +219,8 @@ macro_rules! __tuple_binary_ops_impl {
         where
             &'a First1: $tr<First2>,
             &'a Other1: $tr<Other2>,
+            Other1: TupleLike,
+            Other2: TupleLike,
         {
             type Output = Tuple<<&'a First1 as $tr<First2>>::Output, <&'a Other1 as $tr<Other2>>::Output>;
             fn $f(self, rhs: Tuple<First2, Other2>) -> Self::Output {
@@ -228,6 +233,8 @@ macro_rules! __tuple_binary_ops_impl {
         where
             &'b First1: $tr<&'a First2>,
             &'b Other1: $tr<&'a Other2>,
+            Other1: TupleLike,
+            Other2: TupleLike,
         {
             type Output =
                 Tuple<<&'b First1 as $tr<&'a First2>>::Output, <&'b Other1 as $tr<&'a Other2>>::Output>;
@@ -243,14 +250,18 @@ macro_rules! __tuple_assignment_ops_impl {
         $(__tuple_assignment_ops_impl!{ @impl $tr $f })*
     };
     (@impl $tr:ident $f:ident) => {
-        impl $tr for Unit {
+        impl $tr<Unit> for Unit {
             fn $f(&mut self, _: Unit) {}
+        }
+
+        impl $tr<&Unit> for Unit {
+            fn $f(&mut self, _: &Unit) {}
         }
 
         impl<First1, Other1, First2, Other2> $tr<Tuple<First2, Other2>> for Tuple<First1, Other1>
         where
-            First1: $tr<First2>,
-            Other1: $tr<Other2>,
+            First1: $tr<First2> + TupleLike,
+            Other1: $tr<Other2> + TupleLike,
         {
             fn $f(&mut self, rhs: Tuple<First2, Other2>) {
                 self.0.$f(rhs.0);
@@ -261,8 +272,8 @@ macro_rules! __tuple_assignment_ops_impl {
         impl<'a, First1, Other1, First2, Other2> $tr<&'a Tuple<First2, Other2>>
             for Tuple<First1, Other1>
         where
-            First1: $tr<&'a First2>,
-            Other1: $tr<&'a Other2>,
+            First1: $tr<&'a First2> + TupleLike,
+            Other1: $tr<&'a Other2> + TupleLike,
         {
             fn $f(&mut self, rhs: &'a Tuple<First2, Other2>) {
                 self.0.$f(&rhs.0);
