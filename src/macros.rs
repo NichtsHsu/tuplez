@@ -145,6 +145,14 @@ macro_rules! __tuple_unary_ops_impl {
             }
         }
 
+        impl $tr for &Unit {
+            type Output = Unit;
+
+            fn $f(self) -> Self::Output {
+                Unit
+            }
+        }
+
         impl<First, Other> $tr for Tuple<First, Other>
         where
             First: $tr,
