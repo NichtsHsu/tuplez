@@ -1,5 +1,5 @@
+use crate::{ToArray, Tuple, TupleLike, Unit};
 use std::mem::MaybeUninit;
-use crate::{Tuple, TupleLike, Unit};
 
 trait FillSlice<T>: TupleLike {
     fn fill_slice(self, arr: &mut [MaybeUninit<T>], index: usize);
@@ -20,26 +20,29 @@ where
     }
 }
 
-/// Convert tuples to [primitive arrays](std::array),
-/// if and only if all elements of the tuple are of the same type.
-///
-/// *Warning*: You have enabled the `any_array` feature, which will allow to use the unstable features to implement
-/// [`ToArray`] for tuples with any number of elements.
-///
-/// Always remember: unstable features are not guaranteed by Rust and may not be available someday in the future.
-pub trait ToArray<T>: TupleLike {
-    /// The primitive array type to generate.
-    type Array;
-
-    /// Converts the tuple to the primitive array.
-    fn to_array(self) -> Self::Array;
-}
-
 impl<T> ToArray<T> for Unit {
     type Array = [T; 0];
+    type Iter<'a> = std::array::IntoIter<&'a T, 0> where Self: 'a, T: 'a;
+    type IterMut<'a> = std::array::IntoIter<&'a mut T, 0> where Self: 'a, T: 'a;
 
     fn to_array(self) -> Self::Array {
         Default::default()
+    }
+
+    fn iter<'a>(&'a self) -> Self::Iter<'a>
+    where
+        Self: 'a,
+        T: 'a,
+    {
+        self.as_ref().to_array().into_iter()
+    }
+
+    fn iter_mut<'a>(&'a mut self) -> Self::IterMut<'a>
+    where
+        Self: 'a,
+        T: 'a,
+    {
+        self.as_mut().to_array().into_iter()
     }
 }
 
@@ -50,10 +53,42 @@ where
 {
     type Array = [First; Self::LEN];
 
+    type Iter<'a> = <<<Tuple<First, Other> as TupleLike>::AsRefOutput<'a> as
+        ToArray<&'a First>>::Array as IntoIterator>::IntoIter
+    where
+        Self::AsRefOutput<'a>: ToArray<&'a First>,
+        Self: 'a,
+        First: 'a;
+
+    type IterMut<'a> = <<<Tuple<First, Other> as TupleLike>::AsMutOutput<'a> as
+        ToArray<&'a mut First>>::Array as IntoIterator>::IntoIter
+    where
+        Self::AsMutOutput<'a>: ToArray<&'a mut First>,
+        Self: 'a,
+        First: 'a;
+
     fn to_array(self) -> Self::Array {
         let mut arr: [MaybeUninit<First>; Self::LEN] = MaybeUninit::uninit_array();
         self.fill_slice(&mut arr, 0);
         unsafe { MaybeUninit::array_assume_init(arr) }
+    }
+
+    fn iter<'a>(&'a self) -> Self::Iter<'a>
+    where
+        Self::AsRefOutput<'a>: ToArray<&'a First>,
+        Self: 'a,
+        First: 'a,
+    {
+        self.as_ref().to_array().into_iter()
+    }
+
+    fn iter_mut<'a>(&'a mut self) -> Self::IterMut<'a>
+    where
+        Self::AsMutOutput<'a>: ToArray<&'a mut First>,
+        Self: 'a,
+        First: 'a,
+    {
+        self.as_mut().to_array().into_iter()
     }
 }
 

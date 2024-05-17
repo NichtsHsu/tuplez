@@ -3351,13 +3351,74 @@ pub trait ToPrimitive {
 /// ```
 ///
 /// Always remember: unstable features are not guaranteed by Rust and may not be available someday in the future.
-#[cfg(not(feature = "any_array"))]
-pub trait ToArray<T>: super::TupleLike {
+pub trait ToArray<T>: TupleLike {
     /// The primitive array type to generate.
-    type Array;
+    type Array: IntoIterator<Item = T>;
+
+    /// Immutable element iterator type.
+    type Iter<'a>: Iterator<Item = &'a T>
+    where
+        Self::AsRefOutput<'a>: ToArray<&'a T>,
+        Self: 'a,
+        T: 'a;
+
+    /// Mutable element iterator type.
+    type IterMut<'a>: Iterator<Item = &'a mut T>
+    where
+        Self::AsMutOutput<'a>: ToArray<&'a mut T>,
+        Self: 'a,
+        T: 'a;
 
     /// Converts the tuple to the primitive array.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
+    /// #
+    /// use tuplez::{tuple, ToArray};
+    ///
+    /// let tup = tuple!(1, 2, 3, 4, 5, 6);
+    /// assert_eq!(tup.to_array(), [1, 2, 3, 4, 5, 6]);
+    /// ```
     fn to_array(self) -> Self::Array;
+
+    /// Get immutable element iterator.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
+    /// #
+    /// use tuplez::{tuple, ToArray};
+    ///
+    /// let tup = tuple!(1, 2, 3, 4, 5, 6);
+    /// assert_eq!(tup.iter().sum::<i32>(), 21);
+    /// ```
+    fn iter<'a>(&'a self) -> Self::Iter<'a>
+    where
+        Self::AsRefOutput<'a>: ToArray<&'a T>,
+        Self: 'a,
+        T: 'a;
+
+    /// Get mutable element iterator.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
+    /// #
+    /// use tuplez::{tuple, ToArray};
+    ///
+    /// let mut tup = tuple!(1, 2, 3, 4, 5, 6);
+    /// tup.iter_mut().for_each(|v| *v += 1);
+    /// assert_eq!(tup.iter().sum::<i32>(), 27);
+    /// ```
+    fn iter_mut<'a>(&'a mut self) -> Self::IterMut<'a>
+    where
+        Self::AsMutOutput<'a>: ToArray<&'a mut T>,
+        Self: 'a,
+        T: 'a;
 }
 
 __tuple_traits_impl! { 0; }
@@ -3753,5 +3814,17 @@ impl<First: Not, Other: Not> Not for Tuple<First, Other> {
 
     fn not(self) -> Self::Output {
         Tuple(!self.0, !self.1)
+    }
+}
+
+impl<T, Other> IntoIterator for Tuple<T, Other>
+where
+    Tuple<T, Other>: crate::ToArray<T>,
+{
+    type Item = T;
+    type IntoIter = <<Self as crate::ToArray<T>>::Array as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.to_array().into_iter()
     }
 }

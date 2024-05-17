@@ -145,9 +145,6 @@ pub use tuple::*;
 
 pub use tupleize::Tupleize;
 
-#[cfg(feature = "any_array")]
-pub use any_array::*;
-
 /// Generate a tuple from a list of expressions.
 ///
 /// # Syntax

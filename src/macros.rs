@@ -52,8 +52,24 @@ macro_rules! __tuple_array_impl {
     ($cnt:literal;) => {
         impl<T> ToArray<T> for $crate::Unit {
             type Array = [T; 0];
+            type Iter<'a> = std::array::IntoIter<&'a T, 0> where Self: 'a, T: 'a;
+            type IterMut<'a> = std::array::IntoIter<&'a mut T, 0> where Self: 'a, T: 'a;
             fn to_array(self) -> Self::Array {
                 Default::default()
+            }
+            fn iter<'a>(&'a self) -> Self::Iter<'a>
+            where
+                Self: 'a,
+                T: 'a
+            {
+                self.as_ref().to_array().into_iter()
+            }
+            fn iter_mut<'a>(&'a mut self) -> Self::IterMut<'a>
+            where
+                Self: 'a,
+                T: 'a
+            {
+                self.as_mut().to_array().into_iter()
             }
         }
 
@@ -66,8 +82,24 @@ macro_rules! __tuple_array_impl {
     ($cnt:literal; $($ts:ident)+) => {
         impl<T> ToArray<T> for $crate::tuple_t!(T; $cnt) {
             type Array = [T; $cnt];
+            type Iter<'a> = std::array::IntoIter<&'a T, $cnt> where Self: 'a, T: 'a;
+            type IterMut<'a> = std::array::IntoIter<&'a mut T, $cnt> where Self: 'a, T: 'a;
             fn to_array(self) -> Self::Array {
                 $crate::macros::__to_array!(self; $($ts)*)
+            }
+            fn iter<'a>(&'a self) -> Self::Iter<'a>
+            where
+                Self: 'a,
+                T: 'a
+            {
+                self.as_ref().to_array().into_iter()
+            }
+            fn iter_mut<'a>(&'a mut self) -> Self::IterMut<'a>
+            where
+                Self: 'a,
+                T: 'a
+            {
+                self.as_mut().to_array().into_iter()
             }
         }
 
