@@ -3,7 +3,7 @@
 //! The module aims to hide the implementation details, all methods are wrapped by [`TupleLike`].
 
 use crate::{tuple, tuple_t, Tuple, TupleLike, Unit};
-use std::ops::{Add, Mul};
+use std::ops::{Add, Deref, DerefMut, Mul};
 
 /// Pop elements from the front and back of the tuple.
 ///
@@ -177,7 +177,7 @@ where
     }
 }
 
-/// Make [`tuple!(&[mut] a, &[mut] b, &[mut] c, ...)`](crate::tuple!)
+/// Convert from [`tuple!(&[mut] a, &[mut] b, &[mut] c, ...)`](crate::tuple!)
 /// to [`tuple!(a, b, c, ...)`](crate::tuple!) by cloning its elements.
 pub trait Cloned: TupleLike {
     /// The type of the output tuple.
@@ -230,7 +230,7 @@ where
     }
 }
 
-/// Make [`tuple!(&[mut] a, &[mut] b, &[mut] c, ...)`](crate::tuple!) to
+/// Convert from [`tuple!(&[mut] a, &[mut] b, &[mut] c, ...)`](crate::tuple!) to
 /// [`tuple!(a, b, c, ...)`](crate::tuple!) by cloning its elements.
 ///
 /// Much like [`Cloned`], but allows dynamic sized types.
@@ -287,7 +287,7 @@ where
     }
 }
 
-/// Make [`tuple!(&[mut] a, &[mut] b, &[mut] c, ...)`](crate::tuple!) to
+/// Convert from [`tuple!(&[mut] a, &[mut] b, &[mut] c, ...)`](crate::tuple!) to
 /// [`tuple!(a, b, c, ...)`](crate::tuple!) by copying its elements.
 pub trait Copied: TupleLike {
     /// The type of the output tuple.
@@ -337,6 +337,96 @@ where
     type CopiedOutput = Tuple<First, Other::CopiedOutput>;
     fn copied(&self) -> Self::CopiedOutput {
         Tuple(*self.0, Copied::copied(&self.1))
+    }
+}
+
+/// Convert from `&Tuple<T0, T1, T2, ...>` to `Tuple<&T0::Target, &T1::Target, &T2::Target ..>`
+/// while all the elements of the tuple implement [`Deref`].
+pub trait AsDeref: TupleLike {
+    /// The type of the output tuple.
+    type AsDerefOutput<'a>: TupleLike
+    where
+        Self: 'a;
+
+    /// Convert from `&Tuple<T0, T1, T2, ...>` to `Tuple<&T0::Target, &T1::Target, &T2::Target, ..>`
+    /// while all the elements of the tuple implement [`Deref`].
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`as_deref()`](TupleLike::as_deref()) method as the wrapper
+    /// for this [`as_deref()`](AsDeref::as_deref()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    ///
+    /// let tup = tuple!(String::from("hello"), Box::new(12), vec![1, 2, 3]);
+    /// assert_eq!(tup.as_deref(), tuple!("hello", &12, &[1, 2, 3] as &[_]));
+    /// ```
+    fn as_deref(&self) -> Self::AsDerefOutput<'_>;
+}
+
+impl AsDeref for Unit {
+    type AsDerefOutput<'a> = Unit;
+
+    fn as_deref(&self) -> Self::AsDerefOutput<'_> {
+        Unit
+    }
+}
+
+impl<First, Other> AsDeref for Tuple<First, Other>
+where
+    First: Deref,
+    Other: AsDeref,
+{
+    type AsDerefOutput<'a> = Tuple<&'a First::Target, Other::AsDerefOutput<'a>> where Self: 'a;
+
+    fn as_deref(&self) -> Self::AsDerefOutput<'_> {
+        Tuple(self.0.deref(), AsDeref::as_deref(&self.1))
+    }
+}
+
+/// Convert from `&mut Tuple<T0, T1, T2, ...>` to `Tuple<&mut T0::Target, &mut T1::Target, &mut T2::Target ..>`
+/// while all the elements of the tuple implement [`DerefMut`].
+pub trait AsDerefMut: TupleLike {
+    /// The type of the output tuple.
+    type AsDerefMutOutput<'a>: TupleLike
+    where
+        Self: 'a;
+
+    /// Convert from `&mut Tuple<T0, T1, T2, ...>` to `Tuple<&mut T0::Target, &mut T1::Target, &mut T2::Target, ..>`
+    /// while all the elements of the tuple implement [`DerefMut`].
+    ///
+    /// Hint: The [`TupleLike`] trait provides the [`as_deref_mut()`](TupleLike::as_deref_mut()) method as the wrapper
+    /// for this [`as_deref_mut()`](AsDerefMut::as_deref_mut()) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tuplez::{tuple, TupleLike, tuple_t};
+    ///
+    /// let mut tup = tuple!(String::from("hello"), Box::new(12), vec![1, 2, 3]);
+    /// let _: tuple_t!(&mut str, &mut i32, &mut [i32]) = tup.as_deref_mut();
+    /// ```
+    fn as_deref_mut(&mut self) -> Self::AsDerefMutOutput<'_>;
+}
+
+impl AsDerefMut for Unit {
+    type AsDerefMutOutput<'a> = Unit;
+
+    fn as_deref_mut(&mut self) -> Self::AsDerefMutOutput<'_> {
+        Unit
+    }
+}
+
+impl<First, Other> AsDerefMut for Tuple<First, Other>
+where
+    First: DerefMut,
+    Other: AsDerefMut,
+{
+    type AsDerefMutOutput<'a> = Tuple<&'a mut First::Target, Other::AsDerefMutOutput<'a>> where Self: 'a;
+
+    fn as_deref_mut(&mut self) -> Self::AsDerefMutOutput<'_> {
+        Tuple(self.0.deref_mut(), AsDerefMut::as_deref_mut(&mut self.1))
     }
 }
 

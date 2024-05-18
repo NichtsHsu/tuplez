@@ -32,7 +32,7 @@ pub trait Tupleize: From<Self::Equivalent> + Into<Self::Equivalent> {
     /// and the same element order as the struct.
     type Equivalent: From<Self>;
 
-    /// Convert self into a tuple.
+    /// Convert from self into a tuple.
     fn tupleize(self) -> Self::Equivalent {
         <Self::Equivalent as From<Self>>::from(self)
     }
