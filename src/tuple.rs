@@ -3488,12 +3488,39 @@ __tuple_assignment_ops_impl! {
 
 impl<T, Other> IntoIterator for Tuple<T, Other>
 where
-    Tuple<T, Other>: crate::ToArray<T>,
+    Tuple<T, Other>: ToArray<T>,
 {
     type Item = T;
-    type IntoIter = <<Self as crate::ToArray<T>>::Array as IntoIterator>::IntoIter;
+    type IntoIter = <<Self as ToArray<T>>::Array as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.to_array().into_iter()
     }
 }
+
+impl<'a, T, Other> IntoIterator for &'a Tuple<T, Other>
+where
+    Tuple<T, Other>: TupleLike,
+    <Tuple<T, Other> as TupleLike>::AsRefOutput<'a>: ToArray<&'a T>,
+{
+    type Item = &'a T;
+    type IntoIter = <<<Tuple<T, Other> as TupleLike>::AsRefOutput<'a> as ToArray<&'a T>>::Array as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.as_ref().to_array().into_iter()
+    }
+}
+
+impl<'a, T, Other> IntoIterator for &'a mut Tuple<T, Other>
+where
+    Tuple<T, Other>: TupleLike,
+    <Tuple<T, Other> as TupleLike>::AsMutOutput<'a>: ToArray<&'a mut T>,
+{
+    type Item = &'a mut T;
+    type IntoIter = <<<Tuple<T, Other> as TupleLike>::AsMutOutput<'a> as ToArray<&'a mut T>>::Array as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.as_mut().to_array().into_iter()
+    }
+}
+
