@@ -221,23 +221,23 @@ macro_rules! __tuple_binary_ops_impl {
 
         impl<First, Other> $tr<Unit> for &Tuple<First, Other>
         where
-            Tuple<First, Other>: Cloned,
+            Tuple<First, Other>: Clone,
             Other: TupleLike
         {
-            type Output = <Tuple<First, Other> as Cloned>::ClonedOutput;
+            type Output = Tuple<First, Other>;
             fn $f(self, _: Unit) -> Self::Output {
-                Cloned::cloned(self)
+                Clone::clone(self)
             }
         }
 
         impl<First, Other> $tr<&Unit> for &Tuple<First, Other>
         where
-            Tuple<First, Other>: Cloned,
+            Tuple<First, Other>: Clone,
             Other: TupleLike
         {
-            type Output = <Tuple<First, Other> as Cloned>::ClonedOutput;
+            type Output = Tuple<First, Other>;
             fn $f(self, _: &Unit) -> Self::Output {
-                Cloned::cloned(self)
+                Clone::clone(self)
             }
         }
 
