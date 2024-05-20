@@ -15,5 +15,6 @@ categories = [ "data-structures", "development-tools::procedural-macro-helpers" 
 proc-macro = true
 
 [dependencies]
-syn = { version = "2.0.*", features = ["full"] }
-quote = "1.0.*"
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"

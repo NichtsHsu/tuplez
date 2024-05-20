@@ -5,6 +5,7 @@ use crate::unwrap::*;
 use crate::{fold::Foldable, foreach::Foreach, macros::*, ops::*, predicate::*, search::*};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use tuplez_macros::tuple_traits_impl;
 #[cfg(feature = "uninit")]
 use std::mem::MaybeUninit;
 use std::{
@@ -3475,39 +3476,7 @@ pub trait ToArray<T>: TupleLike {
         T: 'a;
 }
 
-__tuple_traits_impl! { 0; }
-__tuple_traits_impl! { 1; T0 }
-__tuple_traits_impl! { 2; T0 T1 }
-__tuple_traits_impl! { 3; T0 T1 T2 }
-__tuple_traits_impl! { 4; T0 T1 T2 T3 }
-__tuple_traits_impl! { 5; T0 T1 T2 T3 T4 }
-__tuple_traits_impl! { 6; T0 T1 T2 T3 T4 T5 }
-__tuple_traits_impl! { 7; T0 T1 T2 T3 T4 T5 T6 }
-__tuple_traits_impl! { 8; T0 T1 T2 T3 T4 T5 T6 T7 }
-__tuple_traits_impl! { 9; T0 T1 T2 T3 T4 T5 T6 T7 T8 }
-__tuple_traits_impl! { 10; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 }
-__tuple_traits_impl! { 11; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 }
-__tuple_traits_impl! { 12; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 }
-__tuple_traits_impl! { 13; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 }
-__tuple_traits_impl! { 14; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 }
-__tuple_traits_impl! { 15; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 }
-__tuple_traits_impl! { 16; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 }
-__tuple_traits_impl! { 17; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 }
-__tuple_traits_impl! { 18; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 }
-__tuple_traits_impl! { 19; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 }
-__tuple_traits_impl! { 20; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 }
-__tuple_traits_impl! { 21; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 }
-__tuple_traits_impl! { 22; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 }
-__tuple_traits_impl! { 23; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 }
-__tuple_traits_impl! { 24; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 }
-__tuple_traits_impl! { 25; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 }
-__tuple_traits_impl! { 26; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 }
-__tuple_traits_impl! { 27; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 }
-__tuple_traits_impl! { 28; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 }
-__tuple_traits_impl! { 29; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 T28 }
-__tuple_traits_impl! { 30; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 T28 T29 }
-__tuple_traits_impl! { 31; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 T28 T29 T30 }
-__tuple_traits_impl! { 32; T0 T1 T2 T3 T4 T5 T6 T7 T8 T9 T10 T11 T12 T13 T14 T15 T16 T17 T18 T19 T20 T21 T22 T23 T24 T25 T26 T27 T28 T29 T30 T31 }
+tuple_traits_impl!(32);
 
 __tuple_unary_ops_impl! {
     Neg::neg(),

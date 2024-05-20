@@ -1,12 +1,118 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Expr, Fields};
+use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Expr, Fields, Ident, LitInt};
 
 mod parser;
 
 use parser::*;
+
+#[proc_macro]
+pub fn tuple_traits_impl(input: TokenStream) -> TokenStream {
+    let max = parse_macro_input!(input as LitInt);
+    let max: usize = match max.base10_parse() {
+        Ok(v) => v,
+        Err(e) => return e.into_compile_error().into(),
+    };
+
+    let mut impls = vec![];
+    impls.push(quote! {
+        impl ::tuplez::ToPrimitive for ::tuplez::Unit {
+            type Primitive = ();
+            fn primitive(self)  -> Self::Primitive {}
+        }
+        impl From<()> for ::tuplez::Unit {
+            fn from(_: ()) -> Self {
+                ::tuplez::Unit
+            }
+        }
+        #[cfg(not(feature = "any_array"))]
+        impl<T> ::tuplez::ToArray<T> for ::tuplez::Unit {
+            type Array = [T; 0];
+            type Iter<'a> = std::array::IntoIter<&'a T, 0> where Self: 'a, T: 'a;
+            type IterMut<'a> = std::array::IntoIter<&'a mut T, 0> where Self: 'a, T: 'a;
+            fn to_array(self) -> Self::Array {
+                Default::default()
+            }
+            fn iter<'a>(&'a self) -> Self::Iter<'a>
+            where
+                Self: 'a,
+                T: 'a
+            {
+                self.as_ref().to_array().into_iter()
+            }
+            fn iter_mut<'a>(&'a mut self) -> Self::IterMut<'a>
+            where
+                Self: 'a,
+                T: 'a
+            {
+                self.as_mut().to_array().into_iter()
+            }
+        }
+        #[cfg(not(feature = "any_array"))]
+        impl<T> From<[T; 0]> for ::tuplez::Unit {
+            fn from(_: [T; 0]) -> Self {
+                ::tuplez::Unit
+            }
+        }
+    });
+
+    let mut tys = vec![];
+    let mut pats = vec![];
+    for i in 0..max {
+        tys.push(Ident::new(&format!("T{i}"), Span::call_site()));
+        pats.push(Ident::new(&format!("v{i}"), Span::call_site()));
+        let count = LitInt::new(&format!("{}", i + 1), Span::call_site());
+        impls.push(quote! {
+            impl<#(#tys),*> ::tuplez::ToPrimitive for ::tuplez::tuple_t!(#(#tys),*) {
+                type Primitive = (#(#tys),*,);
+                fn primitive(self)  -> Self::Primitive {
+                    let ::tuplez::tuple_pat!(#(#pats),*) = self;
+                    (#(#pats),*,)
+                }
+            }
+            impl<#(#tys),*> From<(#(#tys),*,)> for ::tuplez::tuple_t!(#(#tys),*) {
+                fn from((#(#pats),*,): (#(#tys),*,)) -> Self {
+                    ::tuplez::tuple!(#(#pats),*)
+                }
+            }
+            #[cfg(not(feature = "any_array"))]
+            impl<T> ToArray<T> for ::tuplez::tuple_t!(T; #count) {
+                type Array = [T; #count];
+                type Iter<'a> = std::array::IntoIter<&'a T, #count> where Self: 'a, T: 'a;
+                type IterMut<'a> = std::array::IntoIter<&'a mut T, #count> where Self: 'a, T: 'a;
+                fn to_array(self) -> Self::Array {
+                    let ::tuplez::tuple_pat!(#(#pats),*) = self;
+                    [#(#pats),*]
+                }
+                fn iter<'a>(&'a self) -> Self::Iter<'a>
+                where
+                    Self: 'a,
+                    T: 'a
+                {
+                    self.as_ref().to_array().into_iter()
+                }
+                fn iter_mut<'a>(&'a mut self) -> Self::IterMut<'a>
+                where
+                    Self: 'a,
+                    T: 'a
+                {
+                    self.as_mut().to_array().into_iter()
+                }
+            }
+            #[cfg(not(feature = "any_array"))]
+            impl<T> From<[T; #count]> for ::tuplez::tuple_t!(T; #count) {
+                fn from([#(#pats),*]: [T; #count]) -> Self {
+                    ::tuplez::tuple!(#(#pats),*)
+                }
+            }
+        });
+    }
+
+    quote! {#(#impls)*}.into()
+}
 
 #[proc_macro]
 pub fn tuple(input: TokenStream) -> TokenStream {
