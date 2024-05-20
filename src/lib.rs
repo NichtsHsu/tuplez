@@ -137,7 +137,7 @@ extern crate self as tuplez;
 extern crate core as std;
 
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
-extern crate alloc as alloc;
+extern crate alloc;
 
 pub mod fold;
 pub mod foreach;
