@@ -28,3 +28,7 @@ jobs:
       run: cargo test --no-default-features
     - name: Run tests all features
       run: cargo miri test --all-features
+    - name: Run tests on no-std
+      run: |
+        rustup target add thumbv6m-none-eabi
+        cargo build --target=thumbv6m-none-eabi --no-default-features --features="full-no-std"
