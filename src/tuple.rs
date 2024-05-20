@@ -354,49 +354,15 @@ pub struct Unit;
 /// assert_eq!(tup1 + tup2, tuple!(9, "hello world".to_string()));
 /// ```
 ///
-/// When you try to implement your own traits on [`Tuple`]s, remember the key idea - recursion.
-/// You bound `Other` with the same trait, and implement that trait for [`Unit`] as the termination of recursion.
-///
-/// This is an example of generating Fibonacci numbers based on [`Tuple`]s:
-///
+/// If the number of elements on both sides is not equal, then the excess will be retained as is:
+/// 
 /// ```
-/// use tuplez::{tuple, Tuple, TupleLike, Unit};
-///
-/// trait Fibonacci {
-///     const CURRENT: usize;
-///     const NEXT: usize;
-///
-///     fn fib(&self) -> Vec<usize>;
-/// }
-///
-/// impl Fibonacci for Unit {
-///     const CURRENT: usize = 0;
-///     const NEXT: usize = 1;
-///
-///     fn fib(&self) -> Vec<usize> {
-///         vec![]
-///     }
-/// }
-///
-/// impl<First, Other> Fibonacci for Tuple<First, Other>
-/// where
-///     Other: TupleLike + Fibonacci,
-/// {
-///     const CURRENT: usize = Other::NEXT;
-///     const NEXT: usize = Other::CURRENT + Other::NEXT;
-///
-///     fn fib(&self) -> Vec<usize> {
-///         let mut v = self.1.fib();
-///         v.push(Self::CURRENT);
-///         v
-///     }
-/// }
-///
-/// assert_eq!(tuple!((); 10).fib(), vec![1, 1, 2, 3, 5, 8, 13, 21, 34, 55]);
+/// use tuplez::tuple;
+/// 
+/// let x = tuple!(10, "hello".to_string(), 3.14, vec![1, 2]);
+/// let y = tuple!(5, " world");
+/// assert_eq!(x + y, tuple!(15, "hello world".to_string(), 3.14, vec![1, 2]));
 /// ```
-///
-/// If you're looking for more complex examples, then the [source code of tuplez](https://github.com/NichtsHsu/tuplez)
-/// is a good place to start.
 ///
 /// # Traverse tuples
 ///

@@ -199,6 +199,48 @@ macro_rules! __tuple_binary_ops_impl {
             }
         }
 
+        impl<First, Other> $tr<Unit> for Tuple<First, Other>
+        where
+            Other: TupleLike
+        {
+            type Output = Self;
+            fn $f(self, _: Unit) -> Self::Output {
+                self
+            }
+        }
+
+        impl<First, Other> $tr<&Unit> for Tuple<First, Other>
+        where
+            Other: TupleLike
+        {
+            type Output = Self;
+            fn $f(self, _: &Unit) -> Self::Output {
+                self
+            }
+        }
+
+        impl<First, Other> $tr<Unit> for &Tuple<First, Other>
+        where
+            Tuple<First, Other>: Cloned,
+            Other: TupleLike
+        {
+            type Output = <Tuple<First, Other> as Cloned>::ClonedOutput;
+            fn $f(self, _: Unit) -> Self::Output {
+                Cloned::cloned(self)
+            }
+        }
+
+        impl<First, Other> $tr<&Unit> for &Tuple<First, Other>
+        where
+            Tuple<First, Other>: Cloned,
+            Other: TupleLike
+        {
+            type Output = <Tuple<First, Other> as Cloned>::ClonedOutput;
+            fn $f(self, _: &Unit) -> Self::Output {
+                Cloned::cloned(self)
+            }
+        }
+
         impl<First1, Other1, First2, Other2> $tr<Tuple<First2, Other2>> for Tuple<First1, Other1>
         where
             First1: $tr<First2>,
