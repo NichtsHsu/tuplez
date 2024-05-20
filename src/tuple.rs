@@ -1378,6 +1378,8 @@ pub trait TupleLike {
     /// let tup = tuple!(&1, &mut arr as &mut [i32], "hello");
     /// assert_eq!(tup.owned(), tuple!(1, vec![1, 2, 3], "hello".to_string()));
     /// ```
+    #[cfg(any(feature = "std", feature = "alloc"))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "alloc"))))]
     fn owned(&self) -> Self::OwnedOutput
     where
         Self: Owned,

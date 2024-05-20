@@ -5,6 +5,9 @@
 use crate::{tuple, tuple_t, Tuple, TupleLike, Unit};
 use std::ops::{Add, Deref, DerefMut, Mul};
 
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+use alloc::borrow::ToOwned;
+
 /// Pop elements from the front and back of the tuple.
 ///
 /// The [`Unit`] type is not [`Poppable`]. All [`Tuple`]s are [`Poppable`].
@@ -234,6 +237,8 @@ where
 /// [`tuple!(a, b, c, ...)`](crate::tuple!) by cloning its elements.
 ///
 /// Much like [`Cloned`], but allows dynamic sized types.
+#[cfg(any(feature = "std", feature = "alloc"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "alloc"))))]
 pub trait Owned: TupleLike {
     /// The type of the output tuple.
     type OwnedOutput: TupleLike;
@@ -257,6 +262,7 @@ pub trait Owned: TupleLike {
     fn owned(&self) -> Self::OwnedOutput;
 }
 
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl Owned for Unit {
     type OwnedOutput = Unit;
 
@@ -265,6 +271,7 @@ impl Owned for Unit {
     }
 }
 
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl<First, Other> Owned for Tuple<&First, Other>
 where
     First: ToOwned + ?Sized,
@@ -276,6 +283,7 @@ where
     }
 }
 
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl<First, Other> Owned for Tuple<&mut First, Other>
 where
     First: ToOwned + ?Sized,

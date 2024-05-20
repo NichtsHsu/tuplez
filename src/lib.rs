@@ -6,6 +6,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(missing_docs)]
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 //! Tuples represented in recursive form rather than parallel form.
 //!
 //! # Motivation
@@ -27,9 +29,10 @@
 //! Tuple(a, Tuple(b, Tuple(c, Tuple(d, ...))))
 //! ```
 //!
-//! The advantage of this representation is that [you can implement methods recursively for all tuples](Tuple#trait-implementations-on-tuple),
-//! and there is no longer a limit on the number of tuple's elements. And, in almost all cases, the [`Tuple`] takes no more memory than
-//! the primitive tuples.
+//! The advantage of this representation is that
+//! [you can implement methods recursively for all tuples](Tuple#trait-implementations-on-tuple),
+//! and there is no longer a limit on the number of tuple's elements. And, in almost all cases,
+//! the [`Tuple`] takes no more memory than the primitive tuples.
 //!
 //! # Functionality
 //!
@@ -37,26 +40,35 @@
 //! * [Access elements](get!) in a tuple at any index, or by their types.
 //! * [Push element](TupleLike::push()) to a tuple or [pop element](TupleLike::pop()) from a tuple.
 //! * [Join](TupleLike::join()) two tuples or [split](split_at!) a tuple into two parts.
-//! * [Rich tuple operations](TupleLike), e.g.: [reverse](TupleLike::rev()), [left rotate](TupleLike::rot_l()), [zip](TupleLike::zip()).
+//! * [Rich tuple operations](TupleLike), e.g.: [reverse](TupleLike::rev()),
+//! [left rotate](TupleLike::rot_l()), [zip](TupleLike::zip()).
 //! * [Get subsequences](Tuple#get-subsequences).
 //! * If all element types implement a `Trait` (e.g. `Eq`, `Add`), then the [`Tuple`] also implement that `Trait`.
 //! [See which traits are supported and learn how to implement your custom traits for `Tuple`](Tuple#trait-implementations-on-tuple).
 //! * [Traverse all elements](Tuple#traverse-tuples) of a tuple, or [fold](Tuple#fold-tuples) a tuple.
-//! * When the number of elements of a tuple doesn't exceed 32, then it can be converted from/to [a primitive tuple](Tuple#convert-fromto-primitive-tuples)
+//! * When the number of elements of a tuple doesn't exceed 32, then it can be converted from/to
+//! [a primitive tuple](Tuple#convert-fromto-primitive-tuples)
 //! or [a primitive array](Tuple#convert-fromto-primitive-arrays).
 //!
 //! # Optional features
 //!
-//! * `any_array`: (*nightly*) Use Rust's unstable feature to implement conversion from/to primitive arrays on tuples with any number of elements.
-//! This feature requires compiling with rustc released to nightly channel.
-//! * `serde`: Derive `Serialize` and `Deserialize` for tuples.
+//! * `unwrap` : (*by default*) Allows converting a tuple whose elements are all wrappers
+//! into a tuple of the values those wrappers contain.
 //! * `uninit`: Add APIs for tuples consisting of [`MaybeUninit`](std::mem::MaybeUninit) elements.
-//! * `unwrap` (*by default*): Allows converting a tuple whose elements are all wrappers into a tuple of the values those wrappers contain.
+//! * `serde`: Derive `Serialize` and `Deserialize` for tuples.
+//! * `std`: (*by default*) Use standard library. It also enables `std` feature of [serde](https://crates.io/crates/serde).
+//! * `alloc`: Use standard `alloc` library. It also enables `alloc` feature of [serde](https://crates.io/crates/serde).
+//! This feature is usually used when `std` is disabled.
+//! * `any_array`: (*nightly*) Use Rust's unstable feature to implement conversion
+//! from/to primitive arrays on tuples with any number of elements.
+//! This feature requires compiling with rustc released to nightly channel.
 //!
 //! Bundles:
 //!
-//! * `default`: Enable default features, which are: `unwrap`.
-//! * `full`: Enable all features available on stable Rust, which are: `serde`, `uninit` and `unwrap`.
+//! * `default`: Enable default features, which are: `std`, `unwrap`.
+//! * `full-no-std`: Enable all features available on stable Rust without `std`, which are: `serde`, `uninit` and `unwrap`.
+//! Note that `default-features = false` is necessary.
+//! * `full`: Enable all features available on stable Rust, which are: `serde`, `std`, `uninit` and `unwrap`.
 //! * `full-nightly`: Enable all features (requires nightly Rust).
 //!
 //! # Examples
@@ -120,6 +132,12 @@
 //! Please check [`Tuple`]'s documentation page for detailed usage.
 
 extern crate self as tuplez;
+
+#[cfg(not(feature = "std"))]
+extern crate core as std;
+
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+extern crate alloc as alloc;
 
 pub mod fold;
 pub mod foreach;
