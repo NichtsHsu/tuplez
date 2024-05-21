@@ -348,6 +348,50 @@ where
     }
 }
 
+/// Convert from `tuple!(x, y, z, ...)` to `tuple!((0, x), (1, y), (2, z), ...)`.
+pub trait Enumerable: TupleLike {
+    /// The type of the output tuple.
+    type EnumerateOutput: TupleLike;
+
+    /// Convert from `tuple!(x, y, z, ...)` to `tuple!((0, x), (1, y), (2, z), ...)`.
+    /// 
+    /// Hint: The [`TupleLike`] trait provides the [`enumerate()`](TupleLike::enumerate()) method as the wrapper
+    /// for this [`enumerate()`](Enumerable::enumerate()) method.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    /// 
+    /// let tup = tuple!("hello", Some([1, 2, 3]), tuple!(3.14, 12));
+    /// assert_eq!(tup.enumerate(), tuple!(
+    ///     (0, "hello"),
+    ///     (1, Some([1, 2, 3])),
+    ///     (2, tuple!(3.14, 12)),
+    /// ));
+    /// ```
+    fn enumerate(self, from: usize) -> Self::EnumerateOutput;
+}
+
+impl Enumerable for Unit {
+    type EnumerateOutput = Unit;
+
+    fn enumerate(self, _: usize) -> Self::EnumerateOutput {
+        Unit
+    }
+}
+
+impl<First, Other> Enumerable for Tuple<First, Other>
+where
+    Other: Enumerable,
+{
+    type EnumerateOutput = Tuple<(usize, First), Other::EnumerateOutput>;
+
+    fn enumerate(self, from: usize) -> Self::EnumerateOutput {
+        Tuple((from, self.0), Enumerable::enumerate(self.1, from + 1))
+    }
+}
+
 /// Convert from `&Tuple<T0, T1, T2, ...>` to `Tuple<&T0::Target, &T1::Target, &T2::Target ..>`
 /// while all the elements of the tuple implement [`Deref`].
 pub trait AsDeref: TupleLike {

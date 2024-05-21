@@ -629,6 +629,27 @@ pub trait TupleLike {
         self
     }
 
+    /// Convert from `tuple!(x, y, z, ...)` to `tuple!((0, x), (1, y), (2, z), ...)`.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use tuplez::{tuple, TupleLike};
+    /// 
+    /// let tup = tuple!("hello", Some([1, 2, 3]), tuple!(3.14, 12));
+    /// assert_eq!(tup.enumerate(), tuple!(
+    ///     (0, "hello"),
+    ///     (1, Some([1, 2, 3])),
+    ///     (2, tuple!(3.14, 12)),
+    /// ));
+    /// ```
+    fn enumerate(self) -> Self::EnumerateOutput
+    where
+        Self: Sized + Enumerable,
+    {
+        Enumerable::enumerate(self, 0)
+    }
+
     /// Take out the searched element, and get the remainder of tuple.
     ///
     /// Add a type annotation to the searched element to let [`take()`](TupleLike::take()) know which one you want.
