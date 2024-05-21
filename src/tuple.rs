@@ -5,7 +5,6 @@ use crate::unwrap::*;
 use crate::{fold::Foldable, foreach::Foreach, macros::*, ops::*, predicate::*, search::*};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use tuplez_macros::tuple_traits_impl;
 #[cfg(feature = "uninit")]
 use std::mem::MaybeUninit;
 use std::{
@@ -16,6 +15,7 @@ use std::{
     },
     pin::Pin,
 };
+use tuplez_macros::tuple_traits_impl;
 
 /// The unit type that represents tuples of zero elements.
 ///
@@ -356,10 +356,10 @@ pub struct Unit;
 /// ```
 ///
 /// If the number of elements on both sides is not equal, then the excess will be retained as is:
-/// 
+///
 /// ```
 /// use tuplez::tuple;
-/// 
+///
 /// let x = tuple!(10, "hello".to_string(), 3.14, vec![1, 2]);
 /// let y = tuple!(5, " world");
 /// assert_eq!(x + y, tuple!(15, "hello world".to_string(), 3.14, vec![1, 2]));
@@ -617,6 +617,16 @@ pub trait TupleLike {
     /// ```
     fn is_empty(&self) -> bool {
         Self::LEN == 0
+    }
+
+    /// Creates a “by reference” adapter for this instance.
+    ///
+    /// It will simply borrow this current tuple.
+    fn by_ref(&mut self) -> &mut Self
+    where
+        Self: Sized,
+    {
+        self
     }
 
     /// Take out the searched element, and get the remainder of tuple.
