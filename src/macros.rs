@@ -237,7 +237,7 @@ pub(crate) use __tuple_unary_ops_impl;
 #[macro_export]
 macro_rules! tuple {
     ($($t:tt)*) => {
-        $crate::tuple_inner!(::tuplez; $($t)*)
+        $crate::tuple_inner!($crate; $($t)*)
     };
 }
 
@@ -271,7 +271,7 @@ macro_rules! tuple {
 #[macro_export]
 macro_rules! tuple_t {
     ($($t:tt)*) => {
-        $crate::tuple_t_inner!(::tuplez; $($t)*)
+        $crate::tuple_t_inner!($crate; $($t)*)
     };
 }
 
@@ -341,7 +341,7 @@ macro_rules! tuple_t {
 #[macro_export]
 macro_rules! tuple_pat {
     ($($t:tt)*) => {
-        $crate::tuple_pat_inner!(::tuplez; $($t)*)
+        $crate::tuple_pat_inner!($crate; $($t)*)
     };
 }
 
@@ -399,7 +399,7 @@ macro_rules! tuple_pat {
 #[macro_export]
 macro_rules! take {
     ($($t:tt)*) => {
-        $crate::take_inner!(::tuplez; $($t)*)
+        $crate::take_inner!($crate; $($t)*)
     };
 }
 
@@ -433,7 +433,7 @@ macro_rules! take {
 #[macro_export]
 macro_rules! split_at {
     ($($t:tt)*) => {
-        $crate::split_at_inner!(::tuplez; $($t)*)
+        $crate::split_at_inner!($crate; $($t)*)
     };
 }
 
@@ -535,7 +535,7 @@ macro_rules! split_at {
 #[macro_export]
 macro_rules! mapper {
     ($($t:tt)*) => {
-        $crate::mapper_inner!(::tuplez; $($t)*)
+        $crate::mapper_inner!($crate; $($t)*)
     };
 }
 
@@ -605,7 +605,7 @@ macro_rules! mapper {
 #[macro_export]
 macro_rules! folder {
     ($($t:tt)*) => {
-        $crate::folder_inner!(::tuplez; $($t)*)
+        $crate::folder_inner!($crate; $($t)*)
     };
 }
 
@@ -684,7 +684,6 @@ macro_rules! folder {
 #[macro_export]
 macro_rules! unary_pred {
     ($($t:tt)*) => {
-        $crate::unary_pred_inner!(::tuplez; $($t)*)
+        $crate::unary_pred_inner!($crate; $($t)*)
     };
 }
-
