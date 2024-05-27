@@ -13,7 +13,7 @@ keywords = ["tuple", "no-std"]
 
 [package]
 name = "tuplez"
-version = "0.14.13"
+version = "0.14.14-alpha"
 description = "Tuples represented in recursive form"
 authors.workspace = true
 license.workspace = true
