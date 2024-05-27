@@ -114,40 +114,49 @@ pub fn tuple_traits_impl(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn tuple(input: TokenStream) -> TokenStream {
-    let TupleGen(exprs) = parse_macro_input!(input as TupleGen);
-    let mut unpack = quote!(::tuplez::Unit);
+    let ReExportTuplez {
+        path,
+        other: TupleGen(exprs),
+    } = parse_macro_input!(input as ReExportTuplez<TupleGen>);
+    let mut unpack = quote!( #path::Unit );
     for expr in exprs.into_iter().rev() {
-        unpack = quote!( ::tuplez::Tuple( #expr, #unpack) );
+        unpack = quote!( #path::Tuple( #expr, #unpack) );
     }
     unpack.into()
 }
 
 #[proc_macro]
 pub fn tuple_t(input: TokenStream) -> TokenStream {
-    let TupleType(types) = parse_macro_input!(input as TupleType);
-    let mut unpack = quote!(::tuplez::Unit);
+    let ReExportTuplez {
+        path,
+        other: TupleType(types),
+    } = parse_macro_input!(input as ReExportTuplez<TupleType>);
+    let mut unpack = quote!( #path::Unit );
     for ty in types.into_iter().rev() {
-        unpack = quote!( ::tuplez::Tuple< #ty, #unpack> );
+        unpack = quote!( #path::Tuple< #ty, #unpack> );
     }
     unpack.into()
 }
 
 #[proc_macro]
 pub fn tuple_pat(input: TokenStream) -> TokenStream {
-    let TuplePat { mut pats, leader } = parse_macro_input!(input as TuplePat);
+    let ReExportTuplez {
+        path,
+        other: TuplePat { mut pats, leader },
+    } = parse_macro_input!(input as ReExportTuplez<TuplePat>);
     let mut unpack;
     if pats.is_empty() {
         unpack = quote!(_);
     } else if leader {
         unpack = quote!(..);
         for pat in pats.into_iter().rev() {
-            unpack = quote!( ::tuplez::Tuple( #pat, #unpack) );
+            unpack = quote!( #path::Tuple( #pat, #unpack) );
         }
     } else {
         let last = pats.pop().unwrap();
         unpack = quote!(#last);
         for pat in pats.into_iter().rev() {
-            unpack = quote!( ::tuplez::Tuple( #pat, #unpack) );
+            unpack = quote!( #path::Tuple( #pat, #unpack) );
         }
     }
     unpack.into()
@@ -163,7 +172,10 @@ pub fn get(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn take(input: TokenStream) -> TokenStream {
-    let result = parse_macro_input!(input as TupleTake);
+    let ReExportTuplez {
+        path,
+        other: result,
+    } = parse_macro_input!(input as ReExportTuplez<TupleTake>);
     match result {
         TupleTake {
             tup,
@@ -176,7 +188,7 @@ pub fn take(input: TokenStream) -> TokenStream {
             let mut unpack = quote!( tup_ #(#fields)* . 1 );
             for _ in 0..index {
                 _ = fields.pop();
-                unpack = quote!( ::tuplez::Tuple( tup_ #(#fields)* . 0, #unpack ) )
+                unpack = quote!( #path::Tuple( tup_ #(#fields)* . 0, #unpack ) )
             }
             quote!({
                 #tup ;
@@ -187,7 +199,7 @@ pub fn take(input: TokenStream) -> TokenStream {
             tup,
             ext: IndexOrType::Type(ty),
         } => quote!({
-            use ::tuplez::TupleLike;
+            use #path::TupleLike;
             let (element_, remainder_): (#ty, _) = (#tup).take();
             (element_, remainder_)
         }),
@@ -234,15 +246,18 @@ pub fn pick(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn split_at(input: TokenStream) -> TokenStream {
-    let TupleIndex { tup, index } = parse_macro_input!(input as TupleIndex);
+    let ReExportTuplez {
+        path,
+        other: TupleIndex { tup, index },
+    } = parse_macro_input!(input as ReExportTuplez<TupleIndex>);
     let tup = quote!( let tup_ = #tup );
     let field = quote!(. 1);
     let mut fields = vec![field.clone(); index];
-    let mut unpack = quote!(::tuplez::Unit);
+    let mut unpack = quote!( #path::Unit );
     let other = quote!( tup_ #(#fields)* );
     for _ in 0..index {
         _ = fields.pop();
-        unpack = quote!( ::tuplez::Tuple( tup_ #(#fields)* . 0, #unpack ) );
+        unpack = quote!( #path::Tuple( tup_ #(#fields)* . 0, #unpack ) );
     }
     quote!({
         #tup ;
@@ -323,7 +338,10 @@ pub fn apply(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn mapper(input: TokenStream) -> TokenStream {
-    let Mapper(rules) = parse_macro_input!(input as Mapper);
+    let ReExportTuplez {
+        path,
+        other: Mapper(rules),
+    } = parse_macro_input!(input as ReExportTuplez<Mapper>);
     let rules = rules.into_iter().map(
         |Rule {
              generic,
@@ -350,7 +368,7 @@ pub fn mapper(input: TokenStream) -> TokenStream {
     );
     quote!(
         {
-            use ::tuplez::foreach::Mapper;
+            use #path::foreach::Mapper;
             #[derive(Copy, Clone, Debug)]
             struct __Mapper;
             #(#rules)*
@@ -362,7 +380,10 @@ pub fn mapper(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn folder(input: TokenStream) -> TokenStream {
-    let Folder(rules) = parse_macro_input!(input as Folder);
+    let ReExportTuplez {
+        path,
+        other: Folder(rules),
+    } = parse_macro_input!(input as ReExportTuplez<Folder>);
     let rules = rules.into_iter().map(
         |Rule {
              generic,
@@ -392,7 +413,7 @@ pub fn folder(input: TokenStream) -> TokenStream {
     );
     quote!(
         {
-            use ::tuplez::fold::Folder;
+            use #path::fold::Folder;
             #[derive(Copy, Clone, Debug)]
             struct __Folder;
             #(#rules)*
@@ -404,7 +425,10 @@ pub fn folder(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn unary_pred(input: TokenStream) -> TokenStream {
-    let UnaryPredicate(rules) = parse_macro_input!(input as UnaryPredicate);
+    let ReExportTuplez {
+        path,
+        other: UnaryPredicate(rules),
+    } = parse_macro_input!(input as ReExportTuplez<UnaryPredicate>);
     let rules = rules.into_iter().map(
         |Rule {
              generic,
@@ -431,7 +455,7 @@ pub fn unary_pred(input: TokenStream) -> TokenStream {
     );
     quote!(
         {
-            use ::tuplez::foreach::Mapper;
+            use #path::foreach::Mapper;
             #[derive(Copy, Clone, Debug)]
             struct __UnaryPred;
             #(#rules)*

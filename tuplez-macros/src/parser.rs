@@ -4,7 +4,23 @@ use std::{
 };
 
 use quote::ToTokens;
-use syn::{parse::Parse, parse_quote, Expr, ExprBlock, Generics, Ident, LitInt, Pat, Token, Type};
+use syn::{
+    parse::Parse, parse_quote, Expr, ExprBlock, Generics, Ident, LitInt, Pat, Path, Token, Type,
+};
+
+pub struct ReExportTuplez<T: Parse> {
+    pub path: Path,
+    pub other: T,
+}
+
+impl<T: Parse> Parse for ReExportTuplez<T> {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let path = input.parse()?;
+        let _: Token![;] = input.parse()?;
+        let other = input.parse()?;
+        Ok(Self { path, other })
+    }
+}
 
 pub struct TupleGen(pub Vec<Expr>);
 
