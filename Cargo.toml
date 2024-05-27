@@ -13,7 +13,7 @@ keywords = ["tuple", "no-std"]
 
 [package]
 name = "tuplez"
-version = "0.14.12"
+version = "0.14.13"
 description = "Tuples represented in recursive form"
 authors.workspace = true
 license.workspace = true
@@ -37,7 +37,7 @@ unwrap = []
 
 [dependencies]
 paste = "1.0"
-tuplez-macros = { path = "tuplez-macros", version = "0.6.1" }
+tuplez-macros = { path = "tuplez-macros", version = "0.7.0" }
 
 [dependencies.serde]
 version = "1.0"
