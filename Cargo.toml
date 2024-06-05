@@ -36,7 +36,6 @@ uninit = []
 unwrap = []
 
 [dependencies]
-paste = "1.0"
 tuplez-macros = { path = "tuplez-macros", version = "0.7.0" }
 
 [dependencies.serde]
