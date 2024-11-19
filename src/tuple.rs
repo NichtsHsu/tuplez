@@ -99,6 +99,8 @@ pub struct Unit;
 /// In most cases, `Tuple` or `Tuple<_, _>` is sufficient to meet the syntax requirements:
 ///
 /// ```
+/// # #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
+///
 /// use tuplez::Tuple;
 ///
 /// let tup = Tuple::from((1, "hello", 3.14)); // or
@@ -469,6 +471,8 @@ pub struct Unit;
 /// the interfaces for converting from/to primitive tuple types is only implemented for [`Tuple`]s with no more than 32 elements.
 ///
 /// ```
+/// # #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
+///
 /// use tuplez::{ToPrimitive, tuple, Tuple, tuple_t};
 ///
 /// let tup = tuple!(1, "hello", 3.14);
@@ -630,12 +634,12 @@ pub trait TupleLike {
     }
 
     /// Convert from `tuple!(x, y, z, ...)` to `tuple!((0, x), (1, y), (2, z), ...)`.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use tuplez::{tuple, TupleLike};
-    /// 
+    ///
     /// let tup = tuple!("hello", Some([1, 2, 3]), tuple!(3.14, 12));
     /// assert_eq!(tup.enumerate(), tuple!(
     ///     (0, "hello"),
@@ -3159,7 +3163,10 @@ impl TupleLike for Unit {
     type PushFrontOutput<T> = Tuple<T, Unit>;
     type PushBackOutput<T> = Tuple<T, Unit>;
     type RevOutput = Unit;
-    type JoinOutput<T> = T where T: TupleLike;
+    type JoinOutput<T>
+        = T
+    where
+        T: TupleLike;
     type ToSomeOutput = Unit;
     type ToOkOutput<E> = Unit;
     type ToTupleOutput = Unit;
@@ -3247,16 +3254,31 @@ impl<First, Other> TupleLike for Tuple<First, Other>
 where
     Other: TupleLike,
 {
-    type AsRefOutput<'a> = Tuple<&'a First, Other::AsRefOutput<'a>> where Self: 'a;
-    type AsMutOutput<'a> = Tuple<&'a mut First, Other::AsMutOutput<'a>> where Self: 'a;
+    type AsRefOutput<'a>
+        = Tuple<&'a First, Other::AsRefOutput<'a>>
+    where
+        Self: 'a;
+    type AsMutOutput<'a>
+        = Tuple<&'a mut First, Other::AsMutOutput<'a>>
+    where
+        Self: 'a;
     type AsPtrOutput = Tuple<*const First, Other::AsPtrOutput>;
     type AsMutPtrOutput = Tuple<*mut First, Other::AsMutPtrOutput>;
-    type AsPinRefOutput<'a> = Tuple<Pin<&'a First>, Other::AsPinRefOutput<'a>> where Self: 'a;
-    type AsPinMutOutput<'a> = Tuple<Pin<&'a mut First>, Other::AsPinMutOutput<'a>> where Self: 'a;
+    type AsPinRefOutput<'a>
+        = Tuple<Pin<&'a First>, Other::AsPinRefOutput<'a>>
+    where
+        Self: 'a;
+    type AsPinMutOutput<'a>
+        = Tuple<Pin<&'a mut First>, Other::AsPinMutOutput<'a>>
+    where
+        Self: 'a;
     type PushFrontOutput<T> = Tuple<T, Self>;
     type PushBackOutput<T> = Tuple<First, Other::PushBackOutput<T>>;
     type RevOutput = <Other::RevOutput as TupleLike>::PushBackOutput<First>;
-    type JoinOutput<T> = Tuple<First, Other::JoinOutput<T>> where T: TupleLike;
+    type JoinOutput<T>
+        = Tuple<First, Other::JoinOutput<T>>
+    where
+        T: TupleLike;
     type ToSomeOutput = Tuple<Option<First>, Other::ToSomeOutput>;
     type ToOkOutput<E> = Tuple<Result<First, E>, Other::ToOkOutput<E>>;
     type ToTupleOutput = Tuple<Tuple<First, Unit>, Other::ToTupleOutput>;
