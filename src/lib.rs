@@ -1,6 +1,5 @@
 #![cfg_attr(feature = "any_array", allow(incomplete_features))]
 #![cfg_attr(feature = "any_array", feature(generic_const_exprs))]
-#![cfg_attr(feature = "any_array", feature(maybe_uninit_uninit_array))]
 #![cfg_attr(feature = "any_array", feature(maybe_uninit_array_assume_init))]
 #![cfg_attr(feature = "any_array", feature(maybe_uninit_uninit_array_transpose))]
 #![cfg_attr(docsrs, feature(doc_cfg))]

@@ -22,8 +22,16 @@ where
 
 impl<T> ToArray<T> for Unit {
     type Array = [T; 0];
-    type Iter<'a> = std::array::IntoIter<&'a T, 0> where Self: 'a, T: 'a;
-    type IterMut<'a> = std::array::IntoIter<&'a mut T, 0> where Self: 'a, T: 'a;
+    type Iter<'a>
+        = std::array::IntoIter<&'a T, 0>
+    where
+        Self: 'a,
+        T: 'a;
+    type IterMut<'a>
+        = std::array::IntoIter<&'a mut T, 0>
+    where
+        Self: 'a,
+        T: 'a;
 
     fn to_array(self) -> Self::Array {
         Default::default()
@@ -68,7 +76,7 @@ where
         First: 'a;
 
     fn to_array(self) -> Self::Array {
-        let mut arr: [MaybeUninit<First>; Self::LEN] = MaybeUninit::uninit_array();
+        let mut arr: [MaybeUninit<First>; Self::LEN] = [const { MaybeUninit::uninit() }; Self::LEN];
         self.fill_slice(&mut arr, 0);
         unsafe { MaybeUninit::array_assume_init(arr) }
     }
