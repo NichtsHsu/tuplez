@@ -32,7 +32,7 @@ pub fn tuple_traits_impl(input: TokenStream) -> TokenStream {
             type Iter<'a> = std::array::IntoIter<&'a T, 0> where Self: 'a, T: 'a;
             type IterMut<'a> = std::array::IntoIter<&'a mut T, 0> where Self: 'a, T: 'a;
             fn to_array(self) -> Self::Array {
-                Default::default()
+                []
             }
             fn iter<'a>(&'a self) -> Self::Iter<'a>
             where
